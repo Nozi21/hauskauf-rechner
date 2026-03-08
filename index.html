@@ -400,6 +400,48 @@
     }
     .tip:hover .tip-box { display: block; }
 
+    /* Detaillierter Tooltip (?) */
+    .tip2 { position: relative; display: inline-block; cursor: help; }
+    .tip2-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px; height: 14px;
+      background: #2563eb;
+      color: white;
+      border-radius: 50%;
+      font-size: 0.6rem;
+      font-weight: 900;
+      vertical-align: middle;
+      margin-left: 3px;
+    }
+    .tip2-box {
+      display: none;
+      position: absolute;
+      background: #f0f4ff;
+      color: #1e293b;
+      font-size: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      width: 300px;
+      line-height: 1.6;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 201;
+      box-shadow: 0 6px 24px rgba(37,99,235,0.18);
+      border: 1px solid #c7d7fe;
+      pointer-events: none;
+    }
+    .tip2-box strong { color: #1d4ed8; display: block; margin-bottom: 0.3rem; font-size: 0.78rem; }
+    .tip2-box ul { margin: 0.3rem 0 0 1rem; padding: 0; }
+    .tip2-box ul li { margin-bottom: 0.15rem; }
+    .tip2:hover .tip2-box { display: block; }
+    @media (max-width: 600px) {
+      .tip2-box { width: 260px; left: auto; right: 0; transform: none; font-size: 0.72rem; }
+      .tip-box  { width: 200px; left: auto; right: 0; transform: none; }
+    }
+
     /* Scenario comparison */
     .btn-save {
       width: 100%; padding: 0.48rem 0.5rem; background: var(--primary); color: white;
@@ -2287,6 +2329,324 @@ document.querySelectorAll('input[type="range"]').forEach(el => {
   el.addEventListener('touchmove', () => setTimeout(updateAll, 0), { passive: true });
   el.addEventListener('touchend',  () => setTimeout(updateAll, 0), { passive: true });
 });
+
+// ============================================================
+// ============================================================
+// DETAILLIERTE TOOLTIPS (tip2 = blauer "?"-Button)
+// ============================================================
+const TIP2 = {
+  r_kaufpreis: {
+    t: 'Kaufpreis – Orientierung',
+    c: `<ul>
+      <li><strong>Preisfindung:</strong> Vergleichen Sie Inserate auf Immoscout24, Immowelt, Kleinanzeigen – mindestens 10 Objekte in der Lage.</li>
+      <li><strong>Bodenrichtwert:</strong> Kostenfrei beim Gutachterausschuss der Gemeinde abrufbar – Grundlage für faire Bewertung.</li>
+      <li><strong>Kaufpreisfaktor:</strong> Kaufpreis ÷ Jahreskaltmiete – unter 25 gilt als solide, über 30 als spekulativ.</li>
+      <li><strong>Gutachten:</strong> Bei Unsicherheit lohnt ein unabhängiges Wertgutachten (ca. 500–1.500 €).</li>
+    </ul>`
+  },
+  r_flaeche: {
+    t: 'Wohnfläche – was zählt?',
+    c: `<ul>
+      <li><strong>Wohnfläche (WoFlV):</strong> Vollwertige Räume 100%, Dachschrägen &lt;1m 0%, 1–2m 50%, Keller/Garage zählen nicht.</li>
+      <li><strong>Einfluss hier:</strong> Bestimmt die empfohlene Instandhaltungsrücklage (€/m²/Monat) und den Preis pro m².</li>
+      <li><strong>Praxis-Tipp:</strong> Eigenmessung lohnt sich – Angaben in Exposés sind oft geschätzt oder nach anderer Norm.</li>
+    </ul>`
+  },
+  r_gebAlter: {
+    t: 'Gebäudealter – Kostenimplikationen',
+    c: `<ul>
+      <li><strong>Energieeffizienz:</strong> Vor 1978 (Wärmeschutzverordnung) oft ungedämmt – hohe Heizkosten und Sanierungspflicht möglich.</li>
+      <li><strong>Finanzierung:</strong> Altbauten haben oft niedrigere Beleihungswerte bei Banken.</li>
+      <li><strong>Typische Lebenszyklen:</strong> Heizung 20–25 J., Dach 35–40 J., Fenster 25–30 J., Elektrik 30–40 J., Fassade 25–35 J.</li>
+      <li><strong>Energieausweis:</strong> Pflichtdokument beim Kauf – Verbrauchskennwert über 150 kWh/m²/Jahr = hoher Sanierungsbedarf.</li>
+    </ul>`
+  },
+  r_bundesland: {
+    t: 'Grunderwerbsteuer – alle Bundesländer',
+    c: `<ul>
+      <li>Bayern, Sachsen: <strong>3,5%</strong></li>
+      <li>Hamburg: <strong>4,5%</strong></li>
+      <li>Baden-Württemberg, Niedersachsen, Rheinland-Pfalz, Sachsen-Anhalt, Bremen: <strong>5,0%</strong></li>
+      <li>Hamburg: <strong>5,5%</strong></li>
+      <li>Berlin, Hessen, Mecklenburg-Vorpommern: <strong>6,0%</strong></li>
+      <li>NRW, Brandenburg, Saarland, Schleswig-Holstein, Thüringen: <strong>6,5%</strong></li>
+      <li><em>Tipp: Käufe zwischen Verwandten 1. Grades sind steuerfrei.</em></li>
+    </ul>`
+  },
+  r_makler: {
+    t: 'Maklerprovision – wann lohnt es sich?',
+    c: `<ul>
+      <li><strong>Gesetz seit Dez. 2020:</strong> Wer den Makler beauftragt, zahlt mindestens 50% – Käufer maximal die Hälfte.</li>
+      <li><strong>Ohne Makler:</strong> Bei Privatverkäufen (Kleinanzeigen, Immoscout „von privat") entfällt die Provision komplett.</li>
+      <li><strong>Typischer Käufer-Anteil:</strong> 3,57% (inkl. MwSt.) in den meisten Bundesländern.</li>
+      <li><strong>Beispiel:</strong> Bei 400.000 € Kaufpreis = 14.280 € nur für den Makler – verhandelbar!</li>
+    </ul>`
+  },
+  r_ek: {
+    t: 'Eigenkapital – Empfehlungen & Risiken',
+    c: `<ul>
+      <li><strong>Mindestempfehlung:</strong> Alle Kaufnebenkosten (8–12%) + 10–20% des Kaufpreises = ca. 20–30% gesamt.</li>
+      <li><strong>Vollfinanzierung (0% EK):</strong> Möglich, aber deutlich höherer Zins (+0,5–1%), strengere Bonität nötig, hohes Ausfallrisiko.</li>
+      <li><strong>LTV-Schwellen:</strong> Unter 60% LTV = beste Konditionen, 60–80% = gut, über 80% = Risikoaufschläge.</li>
+      <li><strong>EK sollte NICHT alles sein:</strong> 3–6 Monatsgehälter als Notgroschen behalten!</li>
+    </ul>`
+  },
+  r_zins: {
+    t: 'Sollzinssatz – wie wird er bestimmt?',
+    c: `<ul>
+      <li><strong>Einflussfaktoren:</strong> EZB-Leitzins, Beleihungsauslauf (LTV), Bonität (SCHUFA), Zinsbindungsdauer, Bank.</li>
+      <li><strong>LTV-Effekt:</strong> Jede 10%-Stufe (60/70/80/90%) kostet ca. 0,1–0,3% Zinsaufschlag.</li>
+      <li><strong>Vergleichen lohnt:</strong> Zwischen bester und schlechtester Bankofferte liegen oft 0,3–0,8% – bei 300k Darlehen = 1.000–2.400 €/Jahr Unterschied.</li>
+      <li><strong>Effektivzins beachten:</strong> Enthält Kosten wie Kontogebühren – immer mit Nominalzins vergleichen.</li>
+    </ul>`
+  },
+  r_tilg: {
+    t: 'Anfängliche Tilgung – Auswirkungen',
+    c: `<ul>
+      <li><strong>1% Tilgung</strong> bei 3,5% Zins → Laufzeit ~47 Jahre! Das Darlehen bleibt fast ewig bestehen.</li>
+      <li><strong>2% Tilgung</strong> → ca. 30 Jahre Laufzeit – solider Standard.</li>
+      <li><strong>3% Tilgung</strong> → ca. 22 Jahre – empfohlen für Menschen nahe Rente.</li>
+      <li><strong>Faustregel:</strong> Tilgung + Zins sollte nicht unter 4% liegen, besser 5%+.</li>
+      <li><strong>Sondertilgung:</strong> Viele Banken erlauben 5–10% p.a. ohne Vorfälligkeitsentschädigung – nutzen!</li>
+    </ul>`
+  },
+  r_zinsb: {
+    t: 'Zinsbindung – Sicherheit vs. Flexibilität',
+    c: `<ul>
+      <li><strong>Kurze Bindung (5 J.):</strong> Günstigerer Zins, aber Zinsänderungsrisiko hoch – sinnvoll nur wenn baldiger Verkauf oder Sondertilgung geplant.</li>
+      <li><strong>10 Jahre:</strong> Klassischer Kompromiss – nach 10 Jahren Sonderkündigungsrecht (§489 BGB).</li>
+      <li><strong>15–20 Jahre:</strong> Mehr Sicherheit, meist 0,2–0,5% höherer Zins – sinnvoll in Niedrigzinsphasen.</li>
+      <li><strong>Nach Zinsbindung:</strong> Umschuldung zu bester Bank möglich – kein Zwang zur Hausbank!</li>
+    </ul>`
+  },
+  r_vmiete: {
+    t: 'Vergleichsmiete – wie ermitteln?',
+    c: `<ul>
+      <li><strong>Mietspiegel:</strong> Viele Gemeinden haben qualifizierte Mietspiegel – kostenlos online abrufbar.</li>
+      <li><strong>Inserate:</strong> Angebotsmieten auf Immoscout/Immowelt für vergleichbare Objekte (Lage, Größe, Ausstattung, Baujahr).</li>
+      <li><strong>Kaltmiete beachten:</strong> Hier nur Kaltmiete eintragen – Nebenkosten sind separat (Hausgeld/Betriebskosten).</li>
+      <li><strong>Bedeutung im Rechner:</strong> Je niedriger die Vergleichsmiete vs. Kaufkosten, desto länger der Break-even – bei sehr niedrigen Mieten kann Kaufen lange nachteilig sein.</li>
+    </ul>`
+  },
+  r_hg: {
+    t: 'Hausgeld / Betriebskosten – was ist drin?',
+    c: `<ul>
+      <li><strong>ETW (Wohnungseigentum):</strong> Hausgeld umfasst Verwaltung, Hausmeister, Versicherung, Instandhaltungsrücklage WEG, Heizung (je nach Abrechnung).</li>
+      <li><strong>EFH (Haus):</strong> Eigene Betriebskosten: Heizung, Müll, Schornstein, Straßenreinigung, Hausversicherung.</li>
+      <li><strong>Typisch ETW:</strong> 2,50–4,00 €/m²/Monat – bei 80m² = 200–320 €.</li>
+      <li><strong>Achtung:</strong> Hausgeldabrechnungen der letzten 3 Jahre beim Kauf prüfen – versteckte Nachzahlungen möglich!</li>
+    </ul>`
+  },
+  r_inst: {
+    t: 'Instandhaltungsrücklage – Peters-Formel',
+    c: `<ul>
+      <li><strong>Peters-Formel:</strong> Gebäudewert × 1,5% ÷ 12 pro Monat. Bei 280.000 € Gebäudewert = 350 €/Monat.</li>
+      <li><strong>Große Posten:</strong> Heizung 15–20k€ (alle 20 J.), Dach 25–40k€ (alle 35 J.), Fenster 10–20k€ (alle 30 J.), Fassade 20–50k€ (alle 30 J.).</li>
+      <li><strong>Häufiger Fehler:</strong> Zu niedrige Rücklage – nach 15–20 Jahren fehlt Geld für fällige Großreparaturen.</li>
+      <li><strong>Separate Anlage:</strong> Rücklage auf separatem Tagesgeldkonto parken, nicht im Girokonto versinken lassen.</li>
+    </ul>`
+  },
+  r_instV: {
+    t: 'Instandhaltung Vermietung – steuerlich',
+    c: `<ul>
+      <li><strong>Steuerlich absetzbar:</strong> Als Werbungskosten voll abzugsfähig – senkt das steuerliche Ergebnis direkt.</li>
+      <li><strong>Sofortabzug vs. Aktivierung:</strong> Erhaltungsaufwand (Reparaturen) sofort abzugsfähig; Herstellungsaufwand (Wertsteigerung) muss über AfA abgeschrieben werden.</li>
+      <li><strong>Faustregel Mietshaus:</strong> 1–2% des Gebäudewertes p.a. als Rücklage – bei gutem Zustand, mehr bei Altbau.</li>
+      <li><strong>Tipp:</strong> Kosten dokumentieren – Belege 10 Jahre aufbewahren.</li>
+    </ul>`
+  },
+  r_gst: {
+    t: 'Grundsteuer – Reform 2025',
+    c: `<ul>
+      <li><strong>Reform 2025:</strong> Bundesweite Neubewertung aller Grundstücke – Grundsteuer B gilt für Wohngrundstücke.</li>
+      <li><strong>Berechnung:</strong> Grundsteuerwert × Steuermesszahl × Hebesatz der Gemeinde.</li>
+      <li><strong>Hebesatz:</strong> Sehr unterschiedlich – München: 535%, Berlin: 810%, Gemeinden im Umland oft 300–400%.</li>
+      <li><strong>Ermittlung:</strong> Grundsteuerbescheid des Verkäufers vorlegen lassen oder beim Finanzamt anfragen.</li>
+    </ul>`
+  },
+  r_vers: {
+    t: 'Versicherungen – was ist nötig?',
+    c: `<ul>
+      <li><strong>Pflicht bei Finanzierung:</strong> Wohngebäudeversicherung (Feuer, Leitungswasser, Sturm) – Bank besteht darauf.</li>
+      <li><strong>Empfohlen:</strong> Elementarschadenversicherung (Überschwemmung, Erdrutsch) – oft unterschätzt!</li>
+      <li><strong>Sinnvoll:</strong> Hausratversicherung (Mobiliar), Privathaftpflicht.</li>
+      <li><strong>Kosten:</strong> Wohngebäude ca. 300–800 €/Jahr (abhängig von m², Baujahr, Lage), Hausrat ca. 100–200 €/Jahr.</li>
+    </ul>`
+  },
+  r_halte: {
+    t: 'Haltedauer – Einfluss auf Break-even',
+    c: `<ul>
+      <li><strong>Kaufnebenkosten:</strong> 8–12% des Kaufpreises fallen einmalig an – werden hier auf die Haltedauer verteilt.</li>
+      <li><strong>Faustregel:</strong> Unter 7–10 Jahren Haltedauer ist Kaufen selten rentabler als Mieten (NK + Transaktionskosten).</li>
+      <li><strong>Steuerfrei nach 10 Jahren:</strong> Verkauf nach 10 Jahren Haltedauer ist für Privatpersonen steuerfrei (§23 EStG) – wichtiger steuerlicher Vorteil!</li>
+      <li><strong>Verkaufskosten:</strong> Beim Verkauf nochmals ca. 1–2% für Makler und Notar einkalkulieren.</li>
+    </ul>`
+  },
+  r_opp: {
+    t: 'Opportunitätskosten – entgangene Rendite',
+    c: `<ul>
+      <li><strong>Was es bedeutet:</strong> Das Eigenkapital könnte alternativ investiert werden – dieser entgangene Ertrag ist ein echter ökonomischer Kostenfaktor.</li>
+      <li><strong>Reale Richtwerte:</strong> Tagesgeld 2025: ~3%, Bundesanleihen: ~2,5%, MSCI World ETF historisch netto: ~6–8%, S&P 500 historisch netto: ~7–8%.</li>
+      <li><strong>Konservativ:</strong> 3–4% (risikoarme Anlage). <strong>Realistisch:</strong> 5–7% (diversifiziertes ETF-Portfolio).</li>
+      <li><strong>Bedeutung:</strong> Je höher der Satz, desto länger dauert es, bis Kaufen sich lohnt.</li>
+    </ul>`
+  },
+  r_kaltm: {
+    t: 'Kaltmiete – Renditeorientierung',
+    c: `<ul>
+      <li><strong>Bruttorendite-Ziel:</strong> Kaltmiete × 12 ÷ Kaufpreis – mindestens 4–5% anstreben.</li>
+      <li><strong>Kaufpreisfaktor:</strong> Kaufpreis ÷ Jahreskaltmiete – unter 20 = günstig, 20–25 = marktüblich, über 25 = teuer.</li>
+      <li><strong>Mietrecht:</strong> Mieterhöhung max. 20% (in angespannten Märkten 15%) in 3 Jahren (Kappungsgrenze). Bei Neuvermietung gilt Mietpreisbremse in vielen Städten.</li>
+      <li><strong>Praxis-Tipp:</strong> Ortsübliche Vergleichsmiete (Mietspiegel) nicht zu weit überschreiten – erhöht Leerstandsrisiko.</li>
+    </ul>`
+  },
+  r_leer: {
+    t: 'Leerstand – Risiken & Realität',
+    c: `<ul>
+      <li><strong>Mieterwechsel:</strong> Realistisch 4–8 Wochen pro Wechsel (Suche, Renovierung, Übergabe) = 0,8–1,5 Monate/Jahr langfristig.</li>
+      <li><strong>Regionale Unterschiede:</strong> Großstädte mit Wohnungsnot: &lt;1 Monat. Ländliche Regionen: 2–4 Monate möglich.</li>
+      <li><strong>Mietausfall Puffer:</strong> 3–6 Monatsmieten auf Rücklagenkonto – Mietausfall durch Zahlungsausfall einkalkulieren.</li>
+      <li><strong>Mietausfallversicherung:</strong> Existiert – ca. 3–5% der Jahresnettomiete als Prämie.</li>
+    </ul>`
+  },
+  r_verw: {
+    t: 'Verwaltungskosten – Optionen im Vergleich',
+    c: `<ul>
+      <li><strong>Selbstverwaltung (0%):</strong> Mietverträge, Abrechnungen, Handwerker selbst koordinieren – zeitintensiv, ca. 2–5 Std./Monat.</li>
+      <li><strong>Hausverwaltung (5–8%):</strong> Komplett-Service inkl. Mietersuche, Abrechnung, Handwerker – empfohlen ab 2+ Einheiten.</li>
+      <li><strong>Steuerlich:</strong> Voll als Werbungskosten absetzbar.</li>
+      <li><strong>Qualität prüfen:</strong> VDIV-Mitglied, Referenzen einholen, Vertrag mit Kündigungsfristen.</li>
+    </ul>`
+  },
+  r_stSatz: {
+    t: 'Grenzsteuersatz – progressive Steuer',
+    c: `<ul>
+      <li><strong>Progression 2025:</strong> 0% bis 11.784 € Grundfreibetrag, dann linear ansteigend bis 42% ab ~66.000 €, Reichensteuer 45% ab ~277.000 €.</li>
+      <li><strong>Grenzsteuersatz:</strong> Der Satz, der auf jeden zusätzlichen Euro Einkommen (z.B. Mieteinnahmen) erhoben wird.</li>
+      <li><strong>Typische Sätze:</strong> Angestellt, 50k€ Jahresgehalt: ~32–35%. 80k€: ~38–42%. Selbstständig mit höherem Einkommen: oft 42%.</li>
+      <li><strong>Kirchensteuer:</strong> Ggf. zusätzlich 8–9% auf die Einkommensteuer.</li>
+    </ul>`
+  },
+  r_gebAnt: {
+    t: 'Gebäudeanteil – AfA-Basis',
+    c: `<ul>
+      <li><strong>Was zählt:</strong> Nur der Gebäudeanteil (nicht Grundstück) ist abschreibungsfähig (§7 EStG).</li>
+      <li><strong>Typische Aufteilung:</strong> Ballungsräume (teures Grundstück): 50–65% Gebäude. Ländlich: 75–85% Gebäude.</li>
+      <li><strong>Finanzamt-Methode:</strong> Sachwertverfahren oder vereinfachte Aufteilung per Bodenrichtwert – bei Kauf schriftlich fixieren lassen.</li>
+      <li><strong>AfA-Satz:</strong> Ab Baujahr 1925: 2% p.a. (50 Jahre). Vor 1925: 2,5% p.a. Neubau ab 2023: 3% p.a.</li>
+    </ul>`
+  },
+  r_etfRate: {
+    t: 'ETF-Rendite – historische Daten',
+    c: `<ul>
+      <li><strong>S&P 500 (1957–2024):</strong> ~10,5% nominal p.a., ~7,5% real (nach Inflation).</li>
+      <li><strong>MSCI World:</strong> ~8,5% nominal, ~5,5% real historisch.</li>
+      <li><strong>Nach Abgeltungssteuer (26,375%):</strong> S&P 500 ~7,7%, MSCI World ~6,3% nominal.</li>
+      <li><strong>Vorsicht:</strong> Vergangene Renditen ≠ Garantie. Schlechte Dekaden existieren (2000–2010: "verlorene Dekade").</li>
+      <li><strong>Empfehlung Rechner:</strong> 6–7% als konservativer Netto-Schätzwert nach Steuern.</li>
+    </ul>`
+  },
+  r_wachs: {
+    t: 'Immobilien-Wertsteigerung – Realität',
+    c: `<ul>
+      <li><strong>Deutschland 2000–2024:</strong> Bundesweit ~4–5% nominal p.a., real (nach Inflation) ~1,5–2,5% p.a.</li>
+      <li><strong>Regional extrem unterschiedlich:</strong> München, Berlin, Hamburg: historisch 6–8% p.a. Ländliche Regionen: 0–2% oder sogar negativ.</li>
+      <li><strong>2022–2024:</strong> Preiskorrektur von 10–20% in vielen Märkten – Wertsteigerung ist nicht garantiert!</li>
+      <li><strong>Konservativer Ansatz:</strong> 1,5–2% nominal p.a. für solide Planung.</li>
+    </ul>`
+  },
+  r_miets: {
+    t: 'Mietpreissteigerung – Trends',
+    c: `<ul>
+      <li><strong>Deutschland 2015–2024:</strong> Angebotsmieten stiegen um ~40–80% in Großstädten, Bestandsmieten durch Mietpreisbremse deutlich weniger.</li>
+      <li><strong>Kappungsgrenze:</strong> Max. 20% Erhöhung in 3 Jahren (angespannte Märkte: 15%).</li>
+      <li><strong>Inflationsschutz:</strong> Bei Indexmiete direkt an CPI gekoppelt – zunehmend üblich bei Neuverträgen.</li>
+      <li><strong>Langfristig:</strong> 1,5–2,5% p.a. als realistischer Langfristwert – entspricht ca. Inflation.</li>
+    </ul>`
+  },
+  r_sanKosten: {
+    t: 'Sanierungskosten – Richtwerte',
+    c: `<ul>
+      <li><strong>Heizung/Wärmepumpe:</strong> 15.000–30.000 € (inkl. Installation, Fußbodenheizung extra).</li>
+      <li><strong>Dach:</strong> 15.000–50.000 € je nach Größe, Material, Dämmung.</li>
+      <li><strong>Fenster (Haus, 15 Stück):</strong> 15.000–30.000 € inkl. Einbau.</li>
+      <li><strong>Fassade/Dämmung (WDVS):</strong> 100–200 €/m² Fassadenfläche = 20.000–60.000 €.</li>
+      <li><strong>Vollsanierung EFH:</strong> 150.000–400.000 € – immer mehrere Angebote einholen!</li>
+    </ul>`
+  },
+  r_kfwZuschuss: {
+    t: 'KfW & BAFA Förderung – Überblick',
+    c: `<ul>
+      <li><strong>BEG Einzelmaßnahmen (BAFA):</strong> Heizungsförderung bis 70% (Wärmepumpe: 30% Basis + 20% Klimabonus + 20% Einkommensbonus).</li>
+      <li><strong>KfW 261 (Effizienzhaus):</strong> Zinsgünstiger Kredit bis 150.000 € + Tilgungszuschuss bis 45%.</li>
+      <li><strong>Wichtig:</strong> Förderantrag VOR Auftragsvergabe stellen – sonst kein Anspruch!</li>
+      <li><strong>Energieberater (BAFA-Liste):</strong> Pflicht für viele Förderprogramme – Kosten ca. 1.000–2.500 € (z.T. selbst förderfähig).</li>
+    </ul>`
+  },
+  r_sanWert: {
+    t: 'Wertsteigerung durch Sanierung',
+    c: `<ul>
+      <li><strong>Energetische Sanierung:</strong> Sprung von Energieeffizienzklasse G/H auf B/C = Wertsteigerung von 10–25% möglich.</li>
+      <li><strong>Voraussetzung:</strong> Kaufpreis muss Sanierungsbedarf bereits widerspiegeln (Abschlag gegenüber saniertem Vergleichsobjekt).</li>
+      <li><strong>Bausubstanz:</strong> Reine Modernisierung (Küche, Bad) bringt oft weniger Wertsteigerung als strukturelle Maßnahmen.</li>
+      <li><strong>Vorsicht:</strong> Nicht jede Sanierung amortisiert sich im Verkaufspreis – Lage entscheidet mehr als Ausstattung.</li>
+    </ul>`
+  },
+  r_sanMonate: {
+    t: 'Sanierungsdauer – Planungsrealität',
+    c: `<ul>
+      <li><strong>Einzelmaßnahmen:</strong> Heizungstausch 2–6 Wochen, Fenster 1–2 Wochen, Fassade 4–8 Wochen.</li>
+      <li><strong>Teilsanierung (bewohnbar):</strong> 2–6 Monate – parallele Koordination von Gewerken nötig.</li>
+      <li><strong>Kernsanierung:</strong> 8–18 Monate – Haus unbewohnbar, Doppelbelastung durch Mietkosten einkalkulieren.</li>
+      <li><strong>Handwerkermangel:</strong> Aktuelle Wartezeiten 3–12 Monate bei energetischen Maßnahmen einplanen.</li>
+    </ul>`
+  },
+  r_sanMietAuf: {
+    t: 'Mietaufschlag nach Modernisierung',
+    c: `<ul>
+      <li><strong>Gesetzliche Grenze (§559 BGB):</strong> Max. 8% der Modernisierungskosten p.a. auf Miete umlegen (laufendes Mietverhältnis).</li>
+      <li><strong>Beispiel:</strong> 80.000 € Sanierungskosten × 8% ÷ 12 = 533 €/Monat max. Mieterhöhung.</li>
+      <li><strong>Neuvermietung:</strong> Mietpreisbremse gilt, aber Modernisierungszuschlag von bis zu 10% der ortsüblichen Vergleichsmiete möglich.</li>
+      <li><strong>Energieeffizienz:</strong> Mieter profitieren durch niedrigere Heizkosten – geringerer Widerstand bei Mieterhöhung.</li>
+    </ul>`
+  },
+  r_erbZins: {
+    t: 'Erbpachtzins – Marktübersicht',
+    c: `<ul>
+      <li><strong>Berechnung:</strong> Bodenrichtwert × Erbbauzinssatz ÷ 12. Typischer Zinssatz: 3–5% p.a.</li>
+      <li><strong>Beispiel:</strong> Bodenrichtwert 200.000 € × 4% ÷ 12 = 666 €/Monat.</li>
+      <li><strong>Wertsicherung:</strong> Meist an Verbraucherpreisindex (VPI) gebunden – steigt mit Inflation automatisch.</li>
+      <li><strong>Anpassung:</strong> Alle 3 Jahre Anpassung möglich – bei hoher Inflation starker Kostenanstieg denkbar.</li>
+      <li><strong>Steuer Vermietung:</strong> Voll als Werbungskosten absetzbar.</li>
+    </ul>`
+  },
+  r_erbLaufzeit: {
+    t: 'Erbpacht-Restlaufzeit – Finanzierung & Wert',
+    c: `<ul>
+      <li><strong>Bankfinanzierung:</strong> Faustregel: Restlaufzeit muss mind. Kreditlaufzeit + 10–20 Jahre betragen.</li>
+      <li><strong>Unter 50 Jahre:</strong> Viele Banken verlangen Zinsaufschläge (0,1–0,5%) oder lehnen ab.</li>
+      <li><strong>Unter 30 Jahre:</strong> Erheblicher Wertverlust, kaum noch finanzierbar, schwer verkäuflich.</li>
+      <li><strong>Heimfall:</strong> Nach Ablauf fällt das Gebäude an den Grundstückseigentümer – Entschädigung oft 2/3 des Verkehrswertes.</li>
+      <li><strong>Verlängerung:</strong> Oft möglich, aber kein Rechtsanspruch – frühzeitig verhandeln!</li>
+    </ul>`
+  },
+};
+
+// Tooltips dynamisch einfügen
+(function attachTip2() {
+  Object.entries(TIP2).forEach(([id, {t, c}]) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    const container = input.closest('.slider-group, .select-row, .toggle-row');
+    if (!container) return;
+    const lbl = container.querySelector('.lbl');
+    if (!lbl) return;
+    const span = document.createElement('span');
+    span.className = 'tip2';
+    span.innerHTML = `<span class="tip2-icon">?</span><span class="tip2-box"><strong>${t}</strong>${c}</span>`;
+    lbl.appendChild(span);
+  });
+})();
 
 // ============================================================
 // INIT
