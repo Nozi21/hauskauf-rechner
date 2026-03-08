@@ -527,6 +527,17 @@
         <input type="range" id="r_flaeche" min="30" max="500" step="5" value="100">
       </div>
 
+      <div class="slider-group">
+        <div class="slider-label">
+          <span class="lbl">Gebaudealter <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Beeinflusst die empfohlene Instandhaltungsrucklage. Neubau: ~1 Euro/m²/Monat, Altbau (&gt;50J): ~3,5 Euro/m²/Monat. Grosse Posten: Heizung (~15–20k alle 20J), Dach (~30k alle 35J), Fenster (~15k alle 30J), Fassade (~30k alle 30J).</span></span></span>
+          <span class="slider-val" id="v_gebAlter">15 Jahre</span>
+        </div>
+        <input type="range" id="r_gebAlter" min="0" max="80" step="1" value="15">
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">
+          Empfohlene Rucklage: <strong id="v_petersEmpf" style="color:var(--primary)">–</strong>
+        </div>
+      </div>
+
       <div class="select-row">
         <span class="lbl">Bundesland <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Die Grunderwerbsteuer variiert je Bundesland von 3,5% (Bayern) bis 6,5% (NRW, Brandenburg, Saarland, SH, Thuringen).</span></span></span>
         <select id="r_bundesland">
@@ -813,10 +824,13 @@
 
         <div class="slider-group">
           <div class="slider-label">
-            <span class="lbl">Instandhaltungsrucklage (monatl.) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Empfehlung: 1,0-1,5 Euro/m2/Monat (Neubau), 2-3 Euro/m2/Monat (Altbau). Peters'sche Formel: Gebaudewert x 1,5% / 12.</span></span></span>
+            <span class="lbl">Instandhaltungsrucklage (monatl.) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Empfehlung je Gebaudealter: bis 10J: 1,0 €/m²/Mon., 11–20J: 1,5 €, 21–35J: 2,0 €, 36–50J: 2,5 €, über 50J: 3,5 €. Deckt: Heizung (~15–20k alle 20J), Dach (~30k alle 35J), Fenster (~15k alle 30J), Fassade (~30k alle 30J).</span></span></span>
             <span class="slider-val" id="v_inst">150 &#8364;</span>
           </div>
           <input type="range" id="r_inst" min="0" max="1500" step="25" value="150">
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">
+            Empfehlung fur dieses Gebaude: <strong id="v_instHint" style="color:var(--primary)">–</strong>
+          </div>
         </div>
 
         <div class="slider-group">
@@ -922,10 +936,13 @@
 
         <div class="slider-group">
           <div class="slider-label">
-            <span class="lbl">Instandhaltung (monatl.) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Faustregel: 1-2 Euro/m2/Monat fur jungere Gebaude, bis 3 Euro fur altere. Steuerlich abzugsfahig (Werbungskosten).</span></span></span>
+            <span class="lbl">Instandhaltung (monatl.) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Empfehlung je Gebaudealter: bis 10J: 1,0 €/m²/Mon., 11–20J: 1,5 €, 21–35J: 2,0 €, 36–50J: 2,5 €, über 50J: 3,5 €. Steuerlich abzugsfahig (Werbungskosten).</span></span></span>
             <span class="slider-val" id="v_instV">150 &#8364;</span>
           </div>
           <input type="range" id="r_instV" min="0" max="1500" step="25" value="150">
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem">
+            Empfehlung fur dieses Gebaude: <strong id="v_instVHint" style="color:var(--primary)">–</strong>
+          </div>
         </div>
 
         <div class="slider-group">
@@ -1180,6 +1197,7 @@ function getInputs() {
   return {
     kaufpreis:  +$('r_kaufpreis').value,
     flaeche:    +$('r_flaeche').value,
+    gebAlter:   +$('r_gebAlter').value,
     bundesland: +$('r_bundesland').value,
     mitMakler:   $('r_makler').checked,
     maklerPct:  +$('r_maklerPct').value / 100,
@@ -1229,6 +1247,10 @@ function calculate(i) {
   const gest    = i.kaufpreis * i.bundesland / 100;
   const makl    = i.mitMakler ? i.kaufpreis * i.maklerPct : 0;
   const nk      = notar + gb + gest + makl;
+
+  // --- Instandhaltungsempfehlung nach Gebäudealter ---
+  const _instRate = i.gebAlter <= 10 ? 1.0 : i.gebAlter <= 20 ? 1.5 : i.gebAlter <= 35 ? 2.0 : i.gebAlter <= 50 ? 2.5 : 3.5;
+  const petersEmpf = i.flaeche * _instRate;
 
   // --- Sanierung ---
   const sanKosten  = i.sanAktiv ? i.sanKosten : 0;
@@ -1345,6 +1367,7 @@ function calculate(i) {
 
   return {
     notar, gb, gest, makl, nk,
+    petersEmpf,
     sanKosten, kfwBetrag, sanNetto, sanWert, wertNachSan,
     erbZinsMon, erbZinsJahr,
     gesinv,
@@ -1371,7 +1394,12 @@ function calculate(i) {
 function updateDOM(i, r) {
   // Slider display values
   $('v_kaufpreis').textContent = fmtE(i.kaufpreis);
-  $('v_flaeche').textContent   = i.flaeche + '\u00a0m\u00b2';
+  $('v_flaeche').textContent    = i.flaeche + '\u00a0m\u00b2';
+  $('v_gebAlter').textContent   = i.gebAlter + '\u00a0Jahre';
+  const _pFmt = fmtE(r.petersEmpf) + '/Monat';
+  $('v_petersEmpf').textContent = _pFmt;
+  $('v_instHint').textContent   = _pFmt;
+  $('v_instVHint').textContent  = _pFmt;
   $('v_makler').textContent    = fmtP(i.maklerPct * 100);
   $('v_ek').textContent        = fmtE(i.ek) + '\u00a0(' + (r.ekQuote * 100).toFixed(0) + '%)';
   $('v_zins').textContent      = fmtP(i.zins * 100);
@@ -2016,6 +2044,7 @@ function loadScenario(idx) {
   // Immobilie
   $('r_kaufpreis').value  = i.kaufpreis;
   $('r_flaeche').value    = i.flaeche;
+  $('r_gebAlter').value   = i.gebAlter;
   $('r_bundesland').value = i.bundesland;
   $('r_makler').checked   = i.mitMakler;
   $('r_maklerPct').value  = i.maklerPct * 100;
