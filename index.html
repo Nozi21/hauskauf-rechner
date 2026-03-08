@@ -1382,7 +1382,7 @@ function calculate(i) {
     stErgebnis, stLast, ncfJahr, ncfMonat,
     nettoR, ekR,
     // misc
-    preisQm: i.kaufpreis / i.flaeche,
+    preisQm: i.flaeche > 0 ? i.kaufpreis / i.flaeche : 0,
     kpJkalt: istMiete > 0 ? i.kaufpreis / jKalt : null,
     nkQuote: i.kaufpreis > 0 ? nk / i.kaufpreis : 0,
   };
