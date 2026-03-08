@@ -1,0 +1,2280 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Immobilien-Finanzierungsrechner v1.3</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      background: linear-gradient(135deg, #0f2460 0%, #1e3a8a 50%, #2563eb 100%);
+      color: white;
+      padding: 2.5rem 2rem 2rem;
+      text-align: center;
+    }
+    header h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; }
+    header p { opacity: 0.8; margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .layout {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 2rem;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) { .layout { padding: 1rem; } }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.5rem;
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .card-title .icon { font-size: 1.1rem; }
+
+    /* Sliders */
+    .slider-group { margin-bottom: 1.1rem; }
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+    }
+    .slider-label .lbl { font-size: 0.82rem; font-weight: 500; color: var(--text-muted); }
+    .slider-val {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--primary);
+      background: #eff6ff;
+      padding: 0.15rem 0.55rem;
+      border-radius: 5px;
+      min-width: 90px;
+      text-align: right;
+    }
+    input[type="range"] {
+      width: 100%;
+      height: 5px;
+      border-radius: 3px;
+      touch-action: pan-y;
+      background: var(--border);
+      outline: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.2);
+      cursor: pointer;
+      transition: box-shadow 0.15s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover { box-shadow: 0 0 0 5px rgba(37,99,235,0.25); }
+
+    /* Select */
+    select {
+      width: 100%;
+      padding: 0.45rem 0.7rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.82rem;
+      color: var(--text);
+      background: white;
+      cursor: pointer;
+      outline: none;
+      margin-top: 0.3rem;
+    }
+    select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .select-row { margin-bottom: 1.1rem; }
+    .select-row .lbl { font-size: 0.82rem; font-weight: 500; color: var(--text-muted); display: block; }
+
+    /* Toggle */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .toggle-row .lbl { font-size: 0.82rem; font-weight: 500; color: var(--text-muted); }
+    .toggle { position: relative; width: 40px; height: 22px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .tslider {
+      position: absolute;
+      inset: 0;
+      background: #cbd5e1;
+      border-radius: 22px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .tslider::before {
+      content: '';
+      position: absolute;
+      width: 16px; height: 16px;
+      left: 3px; top: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .toggle input:checked + .tslider { background: var(--primary); }
+    .toggle input:checked + .tslider::before { transform: translateX(18px); }
+
+    /* Section label */
+    .section-lbl {
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin: 1.2rem 0 0.6rem;
+    }
+
+    /* Cost rows */
+    .cost-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.82rem;
+    }
+    .cost-row:last-of-type { border-bottom: none; }
+    .cost-row .clbl { color: var(--text-muted); }
+    .cost-row .cval { font-weight: 600; }
+    .cost-row .cval.neg { color: var(--danger); }
+    .cost-row .cval.pos { color: var(--success); }
+    .cost-total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0;
+      font-weight: 700;
+      font-size: 0.9rem;
+      border-top: 2px solid var(--border);
+      margin-top: 0.2rem;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0.4rem;
+      background: var(--card);
+      padding: 0.35rem;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 1.5rem;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 0.7rem;
+      border: none;
+      background: transparent;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.35);
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* KPI grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .kpi-grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .kpi-card {
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 0.9rem 0.75rem;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    .kpi-val { font-size: 1.3rem; font-weight: 800; color: var(--primary); line-height: 1.1; }
+    .kpi-val.pos { color: var(--success); }
+    .kpi-val.neg { color: var(--danger); }
+    .kpi-val.warn { color: var(--warning); }
+    .kpi-lbl { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.3rem; font-weight: 500; }
+
+    /* Chart */
+    .chart-wrap { position: relative; margin-top: 1rem; }
+
+    /* Sidebar */
+    .sidebar { position: sticky; top: 1.5rem; }
+
+    .hero-card {
+      background: linear-gradient(135deg, #0f2460 0%, #2563eb 100%);
+      color: white;
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-md);
+      margin-bottom: 1.5rem;
+    }
+    .hero-card h3 { font-size: 0.8rem; font-weight: 600; opacity: 0.7; margin-bottom: 0.2rem; }
+    .hero-rate { font-size: 2.8rem; font-weight: 900; line-height: 1; }
+    .hero-sub { font-size: 0.75rem; opacity: 0.65; margin-bottom: 1.25rem; margin-top: 0.15rem; }
+    .hero-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      font-size: 0.82rem;
+    }
+    .hero-row:last-child { border-bottom: none; }
+    .hero-row .hl { opacity: 0.75; }
+    .hero-row .hv { font-weight: 700; }
+    .hero-total {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.7rem 0 0;
+      font-weight: 800;
+      font-size: 1rem;
+      border-top: 2px solid rgba(255,255,255,0.25);
+      margin-top: 0.4rem;
+    }
+    .hero-warn {
+      background: rgba(245,158,11,0.15);
+      border: 1px solid rgba(245,158,11,0.4);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+      margin-top: 0.75rem;
+      color: #fef3c7;
+    }
+
+    /* Decision meter */
+    .meter-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.5rem;
+    }
+    .meter-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .meter-sub { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+    .meter-track {
+      height: 22px;
+      border-radius: 11px;
+      background: linear-gradient(to right, #ef4444 0%, #f59e0b 45%, #10b981 100%);
+      position: relative;
+      margin-bottom: 0.4rem;
+    }
+    .meter-needle {
+      position: absolute;
+      width: 3px;
+      height: 30px;
+      background: #1e293b;
+      border-radius: 2px;
+      top: -4px;
+      transform: translateX(-50%);
+      transition: left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .meter-needle::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 10px; height: 10px;
+      background: #1e293b;
+      border-radius: 50%;
+    }
+    .meter-lbls {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    .meter-verdict {
+      text-align: center;
+      font-size: 0.92rem;
+      font-weight: 700;
+      margin-top: 0.75rem;
+      padding: 0.5rem;
+      border-radius: 8px;
+    }
+
+    /* Alert boxes */
+    .alert {
+      border-radius: 8px;
+      padding: 0.6rem 0.9rem;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      margin-top: 0.75rem;
+    }
+    .alert-warn { background: #fef3c7; border: 1px solid #fbbf24; color: #92400e; }
+    .alert-info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+    .alert-danger { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; }
+
+    /* Anschluss table */
+    .anschluss-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 0.75rem; }
+    .anschluss-table th {
+      text-align: left;
+      padding: 0.4rem 0.5rem;
+      background: var(--bg);
+      font-weight: 700;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .anschluss-table td { padding: 0.4rem 0.5rem; border-top: 1px solid var(--border); }
+    .anschluss-table tr.current td { background: #eff6ff; font-weight: 600; }
+
+    /* Tooltip */
+    .tip { position: relative; display: inline-block; cursor: help; }
+    .tip-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px; height: 14px;
+      background: #cbd5e1;
+      color: white;
+      border-radius: 50%;
+      font-size: 0.6rem;
+      font-weight: 900;
+      vertical-align: middle;
+      margin-left: 3px;
+    }
+    .tip-box {
+      display: none;
+      position: absolute;
+      background: #1e293b;
+      color: #e2e8f0;
+      font-size: 0.73rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 7px;
+      width: 230px;
+      line-height: 1.5;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 200;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      pointer-events: none;
+    }
+    .tip:hover .tip-box { display: block; }
+
+    /* Scenario comparison */
+    .btn-save {
+      width: 100%; padding: 0.48rem 0.5rem; background: var(--primary); color: white;
+      border: none; border-radius: 7px; font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; margin-top: 0.5rem; transition: background 0.15s;
+    }
+    .btn-save:hover { background: var(--primary-dark); }
+    .btn-load {
+      width: 100%; padding: 0.36rem; background: transparent; color: #0d9488;
+      border: 1px solid #0d9488; border-radius: 7px; font-size: 0.73rem;
+      cursor: pointer; margin-top: 0.3rem; transition: all 0.15s; font-weight: 600;
+    }
+    .btn-load:hover { background: #f0fdfa; border-color: #0f766e; color: #0f766e; }
+    .btn-clear {
+      width: 100%; padding: 0.36rem; background: transparent; color: var(--text-muted);
+      border: 1px solid var(--border); border-radius: 7px; font-size: 0.73rem;
+      cursor: pointer; margin-top: 0.3rem; transition: all 0.15s;
+    }
+    .btn-clear:hover { background: #fee2e2; color: var(--danger); border-color: #fca5a5; }
+    .s-slot {
+      border: 2px dashed var(--border); border-radius: 10px;
+      padding: 0.85rem; transition: all 0.25s;
+    }
+    .s-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; vertical-align: middle; margin-right: 4px; }
+    .s-name { font-size: 0.8rem; font-weight: 700; vertical-align: middle; }
+    .s-detail { font-size: 0.72rem; color: var(--text-muted); margin: 0.45rem 0; line-height: 1.7; text-align: left; }
+    .comp-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .comp-table th {
+      padding: 0.5rem 0.65rem; text-align: left; background: var(--bg);
+      font-weight: 700; font-size: 0.72rem; color: var(--text-muted);
+      border-bottom: 2px solid var(--border);
+    }
+    .comp-table td { padding: 0.42rem 0.65rem; border-bottom: 1px solid var(--border); }
+    .comp-table tr:last-child td { border-bottom: none; }
+    .comp-table .row-lbl { color: var(--text-muted); font-size: 0.78rem; }
+    .comp-section-row td {
+      background: var(--bg); font-size: 0.67rem; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-muted); padding: 0.38rem 0.65rem;
+    }
+    .comp-table tbody tr:hover td { background: #fafbfc; }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      border-top: 1px solid var(--border);
+      margin-top: 0.5rem;
+    }
+    footer p + p { margin-top: 0.25rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Immobilien-Finanzierungsrechner</h1>
+  <p>Alle Kosten transparent &mdash; fundierte Kaufentscheidung fur Eigennutzung &amp; Kapitalanlage</p>
+  <p style="font-size:0.72rem;opacity:0.55;margin-top:0.3rem">v1.3 &mdash; 2026-03-08</p>
+</header>
+
+<div class="layout">
+  <!-- ===== LEFT COLUMN ===== -->
+  <div>
+
+    <!-- SZENARIENVERGLEICH SAVE BAR -->
+    <div class="card" style="background:linear-gradient(135deg,#f8fafc,#f0f4ff);border:2px solid #e0e7ff">
+      <div class="card-title" style="border-bottom:none;padding-bottom:0;margin-bottom:0.5rem">
+        &#128203; Szenarienvergleich
+      </div>
+      <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:1rem">
+        Parametersatz einstellen &rarr; als Szenario speichern &rarr; variieren &rarr; erneut speichern. Der vollständige Vergleich erscheint unten automatisch.
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.75rem">
+        <div class="s-slot" id="slot-0">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.2rem">
+            <span><span class="s-dot" style="background:#2563eb"></span><span class="s-name">Szenario 1</span></span>
+            <span id="slot-0-status" style="font-size:0.68rem;color:var(--text-muted)">Leer</span>
+          </div>
+          <div id="slot-0-detail" class="s-detail" style="display:none"></div>
+          <button class="btn-save" onclick="saveScenario(0)">&#10010; Aktuell speichern</button>
+          <button class="btn-load" id="slot-0-load" onclick="loadScenario(0)" style="display:none">&#8617; Laden</button>
+          <button class="btn-clear" id="slot-0-clear" onclick="clearScenario(0)" style="display:none">Szenario löschen</button>
+        </div>
+        <div class="s-slot" id="slot-1">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.2rem">
+            <span><span class="s-dot" style="background:#7c3aed"></span><span class="s-name">Szenario 2</span></span>
+            <span id="slot-1-status" style="font-size:0.68rem;color:var(--text-muted)">Leer</span>
+          </div>
+          <div id="slot-1-detail" class="s-detail" style="display:none"></div>
+          <button class="btn-save" onclick="saveScenario(1)">&#10010; Aktuell speichern</button>
+          <button class="btn-load" id="slot-1-load" onclick="loadScenario(1)" style="display:none">&#8617; Laden</button>
+          <button class="btn-clear" id="slot-1-clear" onclick="clearScenario(1)" style="display:none">Szenario löschen</button>
+        </div>
+        <div class="s-slot" id="slot-2">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.2rem">
+            <span><span class="s-dot" style="background:#ea580c"></span><span class="s-name">Szenario 3</span></span>
+            <span id="slot-2-status" style="font-size:0.68rem;color:var(--text-muted)">Leer</span>
+          </div>
+          <div id="slot-2-detail" class="s-detail" style="display:none"></div>
+          <button class="btn-save" onclick="saveScenario(2)">&#10010; Aktuell speichern</button>
+          <button class="btn-load" id="slot-2-load" onclick="loadScenario(2)" style="display:none">&#8617; Laden</button>
+          <button class="btn-clear" id="slot-2-clear" onclick="clearScenario(2)" style="display:none">Szenario löschen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMMOBILIE -->
+    <div class="card">
+      <div class="card-title"><span class="icon">&#127968;</span> Immobilie &amp; Kaufnebenkosten</div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span class="lbl">Kaufpreis</span>
+          <span class="slider-val" id="v_kaufpreis">400.000 &#8364;</span>
+        </div>
+        <input type="range" id="r_kaufpreis" min="50000" max="1500000" step="5000" value="400000">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span class="lbl">Wohnflache (m&#178;) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Wird fur Instandhaltungskosten und Vergleichswerte benotigt.</span></span></span>
+          <span class="slider-val" id="v_flaeche">100 m&#178;</span>
+        </div>
+        <input type="range" id="r_flaeche" min="30" max="500" step="5" value="100">
+      </div>
+
+      <div class="select-row">
+        <span class="lbl">Bundesland <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Die Grunderwerbsteuer variiert je Bundesland von 3,5% (Bayern) bis 6,5% (NRW, Brandenburg, Saarland, SH, Thuringen).</span></span></span>
+        <select id="r_bundesland">
+          <option value="3.5">Bayern (3,5%)</option>
+          <option value="5.0">Baden-Wurttemberg (5,0%)</option>
+          <option value="5.5">Hamburg (5,5%)</option>
+          <option value="6.0" selected>Berlin (6,0%)</option>
+          <option value="6.0">Hessen (6,0%)</option>
+          <option value="6.0">Mecklenburg-Vorpommern (6,0%)</option>
+          <option value="5.0">Niedersachsen (5,0%)</option>
+          <option value="6.5">Nordrhein-Westfalen (6,5%)</option>
+          <option value="5.0">Rheinland-Pfalz (5,0%)</option>
+          <option value="6.5">Saarland (6,5%)</option>
+          <option value="5.5">Sachsen (5,5%)</option>
+          <option value="5.0">Sachsen-Anhalt (5,0%)</option>
+          <option value="6.5">Schleswig-Holstein (6,5%)</option>
+          <option value="6.5">Thuringen (6,5%)</option>
+          <option value="6.5">Brandenburg (6,5%)</option>
+          <option value="5.0">Bremen (5,0%)</option>
+        </select>
+      </div>
+
+      <div class="toggle-row">
+        <span class="lbl">Mit Makler <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Seit Dez. 2020: Wenn der Verkaufer den Makler beauftragt, zahlt der Kaufer maximal die Halfte der Provision. Ublich: 3,57% fur den Kaufer.</span></span></span>
+        <label class="toggle"><input type="checkbox" id="r_makler" checked><span class="tslider"></span></label>
+      </div>
+
+      <div id="makler-group" class="slider-group">
+        <div class="slider-label">
+          <span class="lbl">Maklerprovision (Kaufer-Anteil)</span>
+          <span class="slider-val" id="v_makler">3,57%</span>
+        </div>
+        <input type="range" id="r_maklerPct" min="0" max="4" step="0.01" value="3.57">
+      </div>
+
+      <div class="section-lbl">Aufschlusselung Kaufnebenkosten</div>
+
+      <div class="cost-row"><span class="clbl">Notarkosten (~1,0%)</span><span class="cval" id="d_notar">-</span></div>
+      <div class="cost-row"><span class="clbl">Grundbucheintrag (~0,5%)</span><span class="cval" id="d_gb">-</span></div>
+      <div class="cost-row"><span class="clbl">Grunderwerbsteuer</span><span class="cval" id="d_gest">-</span></div>
+      <div class="cost-row"><span class="clbl">Maklerprovision</span><span class="cval" id="d_makl">-</span></div>
+      <div class="cost-total-row"><span>Gesamte Nebenkosten</span><span id="d_nk_total">-</span></div>
+      <div class="cost-total-row" style="color:var(--primary)"><span>Gesamtinvestition</span><span id="d_gesinv">-</span></div>
+    </div>
+
+    <!-- SANIERUNG -->
+    <div class="card">
+      <div class="card-title"><span class="icon">&#128296;</span> Sanierung &amp; Modernisierung</div>
+
+      <div class="toggle-row">
+        <span class="lbl" style="font-weight:600;color:var(--text)">Sanierungsbedarf berücksichtigen</span>
+        <label class="toggle"><input type="checkbox" id="r_sanAktiv"><span class="tslider"></span></label>
+      </div>
+
+      <div id="san-inputs" style="display:none">
+        <div class="alert alert-warn" style="margin-top:0;margin-bottom:1rem">
+          &#9888; Sanierungskosten erhöhen den Finanzierungsbedarf. Typische Vollsanierung eines EFH: 150.000&ndash;400.000 &#8364;.
+        </div>
+
+        <div class="section-lbl">Kostenplanung</div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Sanierungskosten gesamt (brutto) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Grobe Richtwerte: Dach 20-50k, Heizung/Warmepumpe 15-30k, Fenster 15-30k, Fassade 20-60k, Elektrik/Sanitär 20-40k, Innenausbau 30-80k. Lassen Sie Angebote einholen!</span></span></span>
+            <span class="slider-val" id="v_sanKosten">80.000 &#8364;</span>
+          </div>
+          <input type="range" id="r_sanKosten" min="5000" max="600000" step="5000" value="80000">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">KfW / BAFA Förderung (Zuschuss) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Mögliche Förderungen: KfW BEG (Effizienzhaus) bis 75.000 &#8364; Tilgungszuschuss, BAFA Heizungsförderung bis 70% der Kosten, KfW 261 Kredit bis 150.000 &#8364;. Zuschüsse müssen vor Baubeginn beantragt werden!</span></span></span>
+            <span class="slider-val" id="v_kfwZuschuss">0 &#8364;</span>
+          </div>
+          <input type="range" id="r_kfwZuschuss" min="0" max="150000" step="1000" value="0">
+        </div>
+
+        <div class="cost-row" style="margin-top:0.5rem">
+          <span class="clbl">Sanierungskosten brutto</span><span class="cval" id="d_sanBrutto">-</span>
+        </div>
+        <div class="cost-row">
+          <span class="clbl">&ndash; KfW/BAFA-Förderung</span><span class="cval pos" id="d_kfwBetrag">-</span>
+        </div>
+        <div class="cost-total-row">
+          <span>Netto-Sanierungskosten (finanzierungsrelevant)</span><span id="d_sanNetto">-</span>
+        </div>
+
+        <div class="section-lbl">Wertsteigerung &amp; Timing</div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Wertgewinn durch Sanierung <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Durch Sanierung kann der Marktwert über den reinen Kaufpreis hinaus steigen. Bei energetischer Sanierung: oft 10-20% Wertsteigerung. Setzt voraus, dass der Kaufpreis den Sanierungsbedarf bereits widerspiegelt.</span></span></span>
+            <span class="slider-val" id="v_sanWert">50.000 &#8364;</span>
+          </div>
+          <input type="range" id="r_sanWert" min="0" max="400000" step="5000" value="50000">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Sanierungsdauer <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Dauer bis zur Bewohnbarkeit / Vermietbarkeit. Kernentkernung: 6-18 Monate. Einzelmaßnahmen: 1-3 Monate. Wärend dieser Zeit: keine Mieteinnahmen, ggf. Doppelbelastung durch eigene Miete.</span></span></span>
+            <span class="slider-val" id="v_sanMonate">6 Monate</span>
+          </div>
+          <input type="range" id="r_sanMonate" min="1" max="36" step="1" value="6">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Mietaufschlag nach Sanierung (Vermietung) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Nach Modernisierung kann die Miete angehoben werden. Gesetzlich: max. 8% der Modernisierungskosten p.a. auf Miete umlegen. Bei Neuvermietung gilt diese Grenze nicht.</span></span></span>
+            <span class="slider-val" id="v_sanMietAuf">200 &#8364;/M</span>
+          </div>
+          <input type="range" id="r_sanMietAuf" min="0" max="800" step="25" value="200">
+        </div>
+
+        <div class="section-lbl">Auswirkung auf Finanzierung</div>
+        <div class="cost-row"><span class="clbl">Kaufpreis</span><span class="cval" id="san_kp">-</span></div>
+        <div class="cost-row"><span class="clbl">+ Kaufnebenkosten</span><span class="cval" id="san_nk">-</span></div>
+        <div class="cost-row"><span class="clbl">+ Netto-Sanierungskosten</span><span class="cval" id="san_snetto">-</span></div>
+        <div class="cost-total-row"><span>= Gesamtinvestition</span><span id="san_gi">-</span></div>
+        <div class="cost-row"><span class="clbl">Immobilienwert nach Sanierung</span><span class="cval pos" id="san_wertNach">-</span></div>
+        <div class="cost-row"><span class="clbl">Mehrkosten Rate durch Sanierung</span><span class="cval neg" id="san_mehrRate">-</span></div>
+        <div class="cost-row"><span class="clbl">Mietausfall während Sanierung</span><span class="cval neg" id="san_mietausfall">-</span></div>
+
+        <div class="alert alert-info" style="margin-top:0.75rem">
+          &#128161; <strong>KfW 261:</strong> Zinsgünstiger Kredit für energetische Sanierung bis 150.000 &#8364; &ndash; zusätzlich oder als Teil Ihrer Hauptfinanzierung möglich. Separat bei Ihrer Bank beantragen.
+        </div>
+      </div>
+    </div>
+
+    <!-- ERBBAURECHT -->
+    <div class="card">
+      <div class="card-title"><span class="icon">&#128205;</span> Erbbaurecht / Erbpacht</div>
+
+      <div class="toggle-row">
+        <span class="lbl" style="font-weight:600;color:var(--text)">Erbpachtgrundstück berücksichtigen</span>
+        <label class="toggle"><input type="checkbox" id="r_erbAktiv"><span class="tslider"></span></label>
+      </div>
+
+      <div id="erb-inputs" style="display:none">
+        <div class="alert alert-info" style="margin-top:0;margin-bottom:1rem">
+          &#128205; Beim Erbbaurecht kaufen Sie das <strong>Gebäude</strong>, nicht das Grundstück. Das Grundstück gehört einem Dritten (Kirche, Kommune, Stiftung) &ndash; Sie zahlen dafür dauerhaft Erbpachtzins. Laufzeiten: typisch 60&ndash;99 Jahre. Kaufpreis ist meist deutlich niedriger als bei vollem Eigentum.
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Erbpachtzins (monatlich) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Typisch: 3-5% des Bodenrichtwertes p.a., monatlich fällig. Beispiel: Bodenrichtwert 150.000 € × 4% / 12 = 500 €/Monat. Der Zins kann vertraglich an den Lebenshaltungsindex gebunden sein (Wertsicherungsklausel).</span></span></span>
+            <span class="slider-val" id="v_erbZins">400 &#8364;/M</span>
+          </div>
+          <input type="range" id="r_erbZins" min="50" max="3000" step="25" value="400">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Verbleibende Restlaufzeit <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Banken finanzieren meist nur, wenn Restlaufzeit > Kreditlaufzeit + 20 Jahre. Unter 30 Jahren Restlaufzeit: erheblicher Wertverlust und kaum Finanzierung möglich. Unter 10 Jahren: praktisch unveräußerlich.</span></span></span>
+            <span class="slider-val" id="v_erbLaufzeit">60 Jahre</span>
+          </div>
+          <input type="range" id="r_erbLaufzeit" min="10" max="99" step="1" value="60">
+        </div>
+
+        <div class="section-lbl">Kostenübersicht Erbpacht</div>
+        <div class="cost-row"><span class="clbl">Erbpachtzins monatlich</span><span class="cval neg" id="d_erbMonat">-</span></div>
+        <div class="cost-row"><span class="clbl">Erbpachtzins jährlich</span><span class="cval neg" id="d_erbJahr">-</span></div>
+        <div class="cost-row"><span class="clbl">Erbpachtzins über 30 Jahre</span><span class="cval neg" id="d_erb30">-</span></div>
+
+        <div id="erb-warn-lz" class="alert alert-danger" style="display:none;margin-top:0.75rem">
+          &#128679; <strong>Achtung:</strong> Die Restlaufzeit endet innerhalb Ihres Betrachtungszeitraums! Der Immobilienwert sinkt stark ab ca. 40 Jahren Restlaufzeit und wird am Ende <strong>null</strong>.
+        </div>
+        <div id="erb-warn-bank" class="alert alert-warn" style="display:none;margin-top:0.5rem">
+          &#9888; Restlaufzeit unter 50 Jahren &ndash; manche Banken verlangen Zinsaufschläge oder lehnen die Finanzierung ab.
+        </div>
+
+        <div class="alert alert-info" style="margin-top:0.75rem">
+          &#128200; <strong>Steuer Vermietung:</strong> Erbpachtzins ist als Werbungskosten voll absetzbar &ndash; reduziert effektiv die Steuerlast. <strong>Eigennutzung:</strong> Kein Steuerabzug, volle Kostenbelastung.
+        </div>
+      </div>
+    </div>
+
+    <!-- FINANZIERUNG -->
+    <div class="card">
+      <div class="card-title"><span class="icon">&#128176;</span> Finanzierung</div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span class="lbl">Eigenkapital <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Empfehlung: Mindestens 20% des Kaufpreises + alle Kaufnebenkosten. Die Nebenkosten sollten stets aus Eigenkapital gedeckt werden.</span></span></span>
+          <span class="slider-val" id="v_ek">80.000 &#8364;</span>
+        </div>
+        <input type="range" id="r_ek" min="0" max="1500000" step="5000" value="80000">
+      </div>
+
+      <div id="ek-warn" class="alert alert-warn" style="display:none">
+        &#9888;&#65039; Eigenkapital deckt nicht die Kaufnebenkosten! Die meisten Banken verlangen mindestens die Nebenkosten aus Eigenkapital (sog. Vollfinanzierung ist teurer &amp; risikoreicher).
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span class="lbl">Sollzinssatz p.a. <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Typische Zinsen 2025 fur 10 Jahre Zinsbindung: 3,5-4,5%. Ihr tatsachlicher Zins hangt von Bonitat, Beleihungsauslauf und Bank ab.</span></span></span>
+          <span class="slider-val" id="v_zins">3,80%</span>
+        </div>
+        <input type="range" id="r_zins" min="0.5" max="9" step="0.05" value="3.8">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span class="lbl">Anfangliche Tilgung p.a. <span class="tip"><span class="tip-icon">i</span><span class="tip-box">1% Tilgung ist das gesetzliche Minimum. Bei aktuellen Zinsen empfiehlt sich mind. 2-3%, da sonst die Laufzeit sehr lang wird (oft 40-60 Jahre!). Mit hoherer Tilgung sind Sie schneller schuldenfrei.</span></span></span>
+          <span class="slider-val" id="v_tilg">2,00%</span>
+        </div>
+        <input type="range" id="r_tilg" min="0.5" max="8" step="0.25" value="2">
+      </div>
+
+      <div class="select-row">
+        <span class="lbl">Zinsbindung <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Dauer der Zinsfestschreibung. Danach muss neu verhandelt werden (Anschlussfinanzierung zum dann gultigen Marktzins). Langere Bindung = mehr Sicherheit, meist etwas hoherer Zins.</span></span></span>
+        <select id="r_zinsb">
+          <option value="5">5 Jahre</option>
+          <option value="10" selected>10 Jahre</option>
+          <option value="15">15 Jahre</option>
+          <option value="20">20 Jahre</option>
+          <option value="25">25 Jahre</option>
+          <option value="30">30 Jahre</option>
+        </select>
+      </div>
+
+      <div class="section-lbl">Tilgungsverlauf nach aktuellen Parametern</div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-val" id="kpi_rate">-</div>
+          <div class="kpi-lbl">Monatliche Rate</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" style="font-size:1.1rem" id="kpi_rest">-</div>
+          <div class="kpi-lbl">Restschuld nach Zinsbindung</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" id="kpi_lz">-</div>
+          <div class="kpi-lbl">Volltilgung in</div>
+        </div>
+      </div>
+
+      <div class="chart-wrap" style="height:230px">
+        <canvas id="chart_amort"></canvas>
+      </div>
+
+      <div class="section-lbl">Anschlussfinanzierung &ndash; Zinsrisiko nach Zinsbindungsende</div>
+      <div class="alert alert-info" style="margin-top:0">
+        Nach der Zinsbindung muss die Restschuld zum dann gultigen Marktzins refinanziert werden. So verandert sich Ihre monatliche Rate:
+      </div>
+      <table class="anschluss-table">
+        <thead>
+          <tr>
+            <th>Anschlusszins</th>
+            <th>Neue Rate/Monat</th>
+            <th>Veranderung</th>
+          </tr>
+        </thead>
+        <tbody id="anschluss-body"></tbody>
+      </table>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="eigen">&#127968; Eigennutzung</button>
+      <button class="tab-btn" data-tab="verm">&#128188; Kapitalanlage / Vermietung</button>
+    </div>
+
+    <!-- TAB: EIGENNUTZUNG -->
+    <div id="tab-eigen" class="tab-content active">
+      <div class="card">
+        <div class="card-title"><span class="icon">&#127968;</span> Eigennutzung &ndash; Echte Monatliche Kosten</div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Vergleichsmiete (kalt) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Was wurden Sie fur eine vergleichbare Immobilie monatlich an Kaltmiete zahlen? Grundlage fur den Mieten-vs.-Kaufen-Vergleich.</span></span></span>
+            <span class="slider-val" id="v_vmiete">1.500 &#8364;</span>
+          </div>
+          <input type="range" id="r_vmiete" min="300" max="6000" step="50" value="1500">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Hausgeld / Nebenkostenvorauszahlung (monatl.) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">ETW: Hausgeld inkl. Instandhaltungsrucklage. Haus: selbst gezahlte Betriebskosten. Typisch: 2-4 Euro/m2/Monat.</span></span></span>
+            <span class="slider-val" id="v_hg">300 &#8364;</span>
+          </div>
+          <input type="range" id="r_hg" min="0" max="2000" step="25" value="300">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Instandhaltungsrucklage (monatl.) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Empfehlung: 1,0-1,5 Euro/m2/Monat (Neubau), 2-3 Euro/m2/Monat (Altbau). Peters'sche Formel: Gebaudewert x 1,5% / 12.</span></span></span>
+            <span class="slider-val" id="v_inst">150 &#8364;</span>
+          </div>
+          <input type="range" id="r_inst" min="0" max="1500" step="25" value="150">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Grundsteuer (monatl.) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Sehr variabel je Gemeinde. Typisch fur ein EFH: 100-400 Euro/Monat. Ab 2025 gilt bundesweit die reformierte Grundsteuer B.</span></span></span>
+            <span class="slider-val" id="v_gst">150 &#8364;</span>
+          </div>
+          <input type="range" id="r_gst" min="0" max="1000" step="10" value="150">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Gebaude- &amp; Haftpflichtversicherung (monatl.) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Wohngebaude- und Hausratversicherung zusammen: ca. 30-100 Euro/Monat je nach Gebaudewert, Lage und Ausstattung.</span></span></span>
+            <span class="slider-val" id="v_vers">50 &#8364;</span>
+          </div>
+          <input type="range" id="r_vers" min="0" max="400" step="5" value="50">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Geplante Haltedauer (Jahre) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Wie lange planen Sie, in der Immobilie zu wohnen? Die einmaligen Kaufnebenkosten werden auf diesen Zeitraum verteilt. Kurzere Haltedauer = hohere effektive Monatskosten.</span></span></span>
+            <span class="slider-val" id="v_halte">15 Jahre</span>
+          </div>
+          <input type="range" id="r_halte" min="3" max="40" step="1" value="15">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Opportunitatskosten Eigenkapital (p.a.) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Was wurde Ihr Eigenkapital alternativ abwerfen? ETF-Portfolio historisch: 5-7% p.a. real. Das sind entgangene Ertrage, die als okonomische Kosten des Kaufs gerechnet werden sollten.</span></span></span>
+            <span class="slider-val" id="v_opp">5,0%</span>
+          </div>
+          <input type="range" id="r_opp" min="0" max="10" step="0.5" value="5">
+        </div>
+
+        <div class="section-lbl">Monatliche Kosten im Vergleich</div>
+
+        <div class="cost-row"><span class="clbl">Hypothekenrate (Zins + Tilgung)</span><span class="cval" id="en_rate">-</span></div>
+        <div class="cost-row" style="padding-left:1rem"><span class="clbl">davon Zinsanteil (1. Monat, echter Kostenanteil)</span><span class="cval neg" id="en_zinsant">-</span></div>
+        <div class="cost-row" style="padding-left:1rem"><span class="clbl">davon Tilgungsanteil (Vermogensaufbau)</span><span class="cval pos" id="en_tilgant">-</span></div>
+        <div class="cost-row"><span class="clbl">Hausgeld / Nebenkosten</span><span class="cval" id="en_hg">-</span></div>
+        <div class="cost-row"><span class="clbl">Instandhaltungsrucklage</span><span class="cval" id="en_inst">-</span></div>
+        <div class="cost-row"><span class="clbl">Grundsteuer</span><span class="cval" id="en_gst">-</span></div>
+        <div class="cost-row"><span class="clbl">Versicherungen</span><span class="cval" id="en_vers">-</span></div>
+        <div class="cost-row"><span class="clbl">Amortis. Kaufnebenkosten (uber Haltedauer)</span><span class="cval neg" id="en_nkAmort">-</span></div>
+        <div class="cost-row"><span class="clbl">Opportunitatskosten Eigenkapital</span><span class="cval neg" id="en_opp">-</span></div>
+        <div class="cost-total-row"><span>Wahre okonomische Gesamtkosten / Monat</span><span id="en_wahrGes">-</span></div>
+
+        <div class="section-lbl">Mieten vs. Kaufen &ndash; okonomischer Vergleich</div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-val" id="kpi_mietKosten">-</div>
+            <div class="kpi-lbl">Effektivkosten Mieten/Monat</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="kpi_kaufKosten">-</div>
+            <div class="kpi-lbl">Effektivkosten Kaufen/Monat</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="kpi_vorteil">-</div>
+            <div class="kpi-lbl">Vorteil Kaufen gegenuber Mieten</div>
+          </div>
+        </div>
+
+        <div class="chart-wrap" style="height:260px">
+          <canvas id="chart_en"></canvas>
+        </div>
+
+        <div class="alert alert-info" style="margin-top:1rem">
+          <strong>Hinweis:</strong> "Wahre Kosten Kaufen" enthalt nur echte Kosten (Zinsen, Nebenkosten, Versicherungen, Opportunitatskosten) &ndash; die Tilgungsrate ist <em>kein</em> Kostenfaktor, da sie Ihr Eigenkapital erhoht.
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: VERMIETUNG -->
+    <div id="tab-verm" class="tab-content">
+      <div class="card">
+        <div class="card-title"><span class="icon">&#128188;</span> Kapitalanlage &ndash; Rendite &amp; Steuer</div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Erwartete Kaltmiete (monatlich)</span>
+            <span class="slider-val" id="v_kaltm">1.500 &#8364;</span>
+          </div>
+          <input type="range" id="r_kaltm" min="300" max="8000" step="50" value="1500">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Leerstand (Monate/Jahr) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Realistisch: 1-2 Monate/Jahr fur Mieterwechsel, Renovierung etc. Leerstand schmalert die Rendite erheblich.</span></span></span>
+            <span class="slider-val" id="v_leer">1,0 Monate</span>
+          </div>
+          <input type="range" id="r_leer" min="0" max="6" step="0.5" value="1">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Verwaltungskosten <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Hausverwaltung: typisch 5-8% der Jahreskaltmiete. Selbstverwaltung = 0%. Steuerlich als Werbungskosten absetzbar.</span></span></span>
+            <span class="slider-val" id="v_verw">5,0%</span>
+          </div>
+          <input type="range" id="r_verw" min="0" max="15" step="0.5" value="5">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Instandhaltung (monatl.) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Faustregel: 1-2 Euro/m2/Monat fur jungere Gebaude, bis 3 Euro fur altere. Steuerlich abzugsfahig (Werbungskosten).</span></span></span>
+            <span class="slider-val" id="v_instV">150 &#8364;</span>
+          </div>
+          <input type="range" id="r_instV" min="0" max="1500" step="25" value="150">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Grundsteuer + Versicherung (monatl.)</span>
+            <span class="slider-val" id="v_gstV">200 &#8364;</span>
+          </div>
+          <input type="range" id="r_gstV" min="0" max="1200" step="25" value="200">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Personlicher Grenzsteuersatz <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Mietertragnisse werden als Einkunfte aus Vermietung &amp; Verpachtung voll mit dem personlichen Steuersatz versteuert. Abzugsfahig: Zinsen, AfA, Verwaltung, Instandhaltung usw.</span></span></span>
+            <span class="slider-val" id="v_stSatz">35%</span>
+          </div>
+          <input type="range" id="r_stSatz" min="14" max="45" step="1" value="35">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Gebaeudeanteil am Kaufpreis <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Nur der Gebaeudeanteil (nicht Grundstueck) darf abgeschrieben werden (AfA). Typisch: 60-80%. Baujahr vor 1925: 2,5% AfA p.a., danach 2% p.a.</span></span></span>
+            <span class="slider-val" id="v_gebAnt">70%</span>
+          </div>
+          <input type="range" id="r_gebAnt" min="40" max="90" step="5" value="70">
+        </div>
+
+        <div class="section-lbl">Rendite &amp; Cash Flow</div>
+
+        <div class="kpi-grid kpi-grid-2">
+          <div class="kpi-card">
+            <div class="kpi-val" id="kpi_brutto">-</div>
+            <div class="kpi-lbl">Bruttorendite p.a.</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="kpi_netto">-</div>
+            <div class="kpi-lbl">Nettorendite p.a. (nach Kosten)</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="kpi_cf">-</div>
+            <div class="kpi-lbl">Cash Flow netto / Monat</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="kpi_ekr">-</div>
+            <div class="kpi-lbl">Eigenkapitalrendite (Leverage)</div>
+          </div>
+        </div>
+
+        <div class="section-lbl">Steuerliche Jahresbetrachtung</div>
+
+        <div class="cost-row"><span class="clbl">Jahreskaltmiete (Sollmiete)</span><span class="cval pos" id="vt_mjahr">-</span></div>
+        <div class="cost-row"><span class="clbl">&ndash; Leerstandsabzug</span><span class="cval neg" id="vt_leer">-</span></div>
+        <div class="cost-row"><span class="clbl">= Tatsachliche Mieteinnahmen</span><span class="cval" id="vt_istM">-</span></div>
+        <div class="cost-row"><span class="clbl">&ndash; Schuldzinsen (steuerl. abzugsfahig)</span><span class="cval neg" id="vt_zinsen">-</span></div>
+        <div class="cost-row"><span class="clbl">&ndash; AfA 2% Gebaudewert <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Abschreibung fur Abnutzung: 2% des Gebaudewertes p.a. fur Gebaude ab Baujahr 1925. Kein echter Geldabfluss, aber steuerlich abzugsfahig.</span></span></span><span class="cval neg" id="vt_afa">-</span></div>
+        <div class="cost-row" id="erb-verm-row" style="display:none"><span class="clbl">&ndash; Erbpachtzins (abzugsfähig)</span><span class="cval neg" id="vt_erb">-</span></div>
+        <div class="cost-row"><span class="clbl">&ndash; Verwaltung, Instandhaltung, Grundst., Vers.</span><span class="cval neg" id="vt_kosten">-</span></div>
+        <div class="cost-row"><span class="clbl">= Steuerlicher Uberschuss / Verlust</span><span class="cval" id="vt_ueb">-</span></div>
+        <div class="cost-row"><span class="clbl">Steuerbelastung / -erstattung</span><span class="cval" id="vt_steuer">-</span></div>
+        <div class="cost-total-row">
+          <span>Netto-Cash Flow nach Steuern (ohne Tilgung)</span>
+          <span id="vt_ncf">-</span>
+        </div>
+
+        <div class="chart-wrap" style="height:290px">
+          <canvas id="chart_verm"></canvas>
+        </div>
+
+        <div class="alert alert-info" style="margin-top:1rem">
+          <strong>Leverage-Effekt:</strong> Durch den Einsatz von Fremdkapital kann die Eigenkapitalrendite die Gesamtrendite deutlich ubersteigen &ndash; geht aber mit entsprechendem Risiko einher.<br>
+          <strong>Faustformel:</strong> Kaufpreis &le; 25x Jahreskaltmiete gilt als solide Investition. Daruber wird es spekulativ.
+        </div>
+      </div>
+    </div>
+
+    <!-- VERMÖGENSENTWICKLUNG -->
+    <div class="card">
+      <div class="card-title"><span class="icon">&#128200;</span> Vermögensentwicklung im Zeitverlauf</div>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1.25rem">
+        Wie entwickeln sich Käufer- und Mietervermögen im Zeitverlauf? Der Käufer baut Eigenkapital durch Tilgung und Wertsteigerung auf. Der Mieter investiert sein Eigenkapital und monatliche Ersparnisse (falls Miete &lt; Käufergesamtkosten) zum angegebenen Opportunitätszins.
+      </p>
+
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-bottom:0.75rem">
+        <div class="slider-group" style="margin-bottom:0">
+          <div class="slider-label">
+            <span class="lbl">Immo-Wertsteigerung p.a.</span>
+            <span class="slider-val" id="v_wachs">2,00%</span>
+          </div>
+          <input type="range" id="r_wachs" min="0" max="6" step="0.25" value="2">
+        </div>
+        <div class="slider-group" style="margin-bottom:0">
+          <div class="slider-label">
+            <span class="lbl">Mietpreissteigerung p.a.</span>
+            <span class="slider-val" id="v_miets">2,00%</span>
+          </div>
+          <input type="range" id="r_miets" min="0" max="6" step="0.25" value="2">
+        </div>
+        <div class="slider-group" style="margin-bottom:0">
+          <div class="slider-label">
+            <span class="lbl">Betrachtungszeitraum</span>
+            <span class="slider-val" id="v_horizont">25 Jahre</span>
+          </div>
+          <input type="range" id="r_horizont" min="5" max="40" step="1" value="25">
+        </div>
+        <div class="slider-group" style="margin-bottom:0">
+          <div class="slider-label">
+            <span class="lbl">ETF-Rendite p.a. (S&amp;P 500 / MSCI World) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">S&amp;P 500 historisch (1957–2024): ~10,5% nominal p.a. Nach Abgeltungssteuer (26,375%): ~7,7%. MSCI World: ~8,5% brutto, ~6,3% nach Steuer. Voreingestellt: 7% als konservativer Netto-Schätzwert. Vergangene Renditen sind keine Garantie für die Zukunft.</span></span></span>
+            <span class="slider-val" id="v_etfRate">7,0%</span>
+          </div>
+          <input type="range" id="r_etfRate" min="2" max="12" step="0.5" value="7">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0.6rem;margin-bottom:1.25rem">
+        <div class="kpi-card">
+          <div class="kpi-val" id="kpi_breakeven" style="font-size:1rem">-</div>
+          <div class="kpi-lbl">Break-even</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" id="kpi_ve_kauf" style="font-size:1rem">-</div>
+          <div class="kpi-lbl">Käufer-Vermögen</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" id="kpi_ve_miet" style="font-size:1rem">-</div>
+          <div class="kpi-lbl">Mieter-Portfolio</div>
+        </div>
+        <div class="kpi-card" style="border:2px solid #f59e0b">
+          <div class="kpi-val warn" id="kpi_ve_etf" style="font-size:1rem">-</div>
+          <div class="kpi-lbl">S&amp;P 500 / ETF</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" id="kpi_ve_diff" style="font-size:1rem">-</div>
+          <div class="kpi-lbl">Vorteil Kauf/ETF</div>
+        </div>
+      </div>
+
+      <div class="section-lbl">Nettovermögen: Käufer vs. Mieter</div>
+      <div class="chart-wrap" style="height:360px">
+        <canvas id="chart_vermoegen"></canvas>
+      </div>
+
+      <div class="section-lbl" style="margin-top:1.5rem">Kumulierte Ausgaben im Vergleich</div>
+      <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.5rem">Gesamte tatsächliche Geldabflüsse: Käufer (Zinsen + laufende Kosten, ohne wertbildende Tilgung) vs. Mieter (Mietzahlungen).</p>
+      <div class="chart-wrap" style="height:230px">
+        <canvas id="chart_kosten"></canvas>
+      </div>
+
+      <div class="alert alert-info" style="margin-top:1rem">
+        <strong>Methodik:</strong> Der Mieter legt sein Eigenkapital sofort an. Monatliche Kostenunterschiede (Käufer zahlt mehr/weniger als der Mieter) werden investiert bzw. abgezogen. Tilgung zählt beim Käufer als Vermögensaufbau, nicht als Kosten. Abgeltungssteuer auf Kapitalerträge (25%) ist nicht berücksichtigt – reale Mieter-Rendite daher ggf. etwas niedriger.
+      </div>
+    </div>
+
+    <!-- SZENARIENVERGLEICH ERGEBNIS (hidden until scenarios saved) -->
+    <div class="card" id="comp-section" style="display:none">
+      <div class="card-title">&#9654; Szenarienvergleich &ndash; Ergebnis</div>
+
+      <div class="section-lbl">Nettovermögen aller Szenarien im Zeitverlauf</div>
+      <div class="chart-wrap" style="height:340px">
+        <canvas id="chart_compare"></canvas>
+      </div>
+
+      <div class="section-lbl" style="margin-top:1.5rem">Kennzahlen im direkten Vergleich</div>
+      <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.75rem">
+        &#9733; markiert jeweils den besten Wert pro Zeile.
+      </p>
+      <div style="overflow-x:auto">
+        <table class="comp-table" id="comp-table"></table>
+      </div>
+    </div>
+
+  </div><!-- end left -->
+
+  <!-- ===== SIDEBAR ===== -->
+  <div class="sidebar">
+
+    <div class="hero-card">
+      <h3>Monatliche Kreditrate</h3>
+      <div class="hero-rate" id="s_rate">-</div>
+      <div class="hero-sub">Annuitat (Zins + Tilgung)</div>
+      <div class="hero-row"><span class="hl">Kaufpreis</span><span class="hv" id="s_kp">-</span></div>
+      <div class="hero-row"><span class="hl">Kaufnebenkosten</span><span class="hv" id="s_nk">-</span></div>
+      <div class="hero-row"><span class="hl">Gesamtinvestition</span><span class="hv" id="s_gi">-</span></div>
+      <div class="hero-row"><span class="hl">Eigenkapital</span><span class="hv" id="s_ek">-</span></div>
+      <div class="hero-row"><span class="hl">Eigenkapitalquote</span><span class="hv" id="s_ekq">-</span></div>
+      <div class="hero-total"><span>Darlehensbetrag</span><span id="s_dl">-</span></div>
+      <div id="s_ltv-warn" class="hero-warn" style="display:none">
+        &#9888; Beleihungsauslauf &gt; 80% &ndash; Banken verlangen oft Zinsaufschlage. Empfehlung: mehr Eigenkapital einsetzen.
+      </div>
+    </div>
+
+    <div class="meter-card">
+      <div class="meter-title">Kaufempfehlung</div>
+      <div class="meter-sub">Basierend auf Ihren aktuellen Parametern</div>
+      <div class="meter-track">
+        <div class="meter-needle" id="needle" style="left:50%"></div>
+      </div>
+      <div class="meter-lbls">
+        <span>&#9888; Kritisch</span>
+        <span>Neutral</span>
+        <span>&#10003; Gut</span>
+      </div>
+      <div class="meter-verdict" id="verdict">-</div>
+    </div>
+
+    <div class="card" style="margin-bottom:1.5rem">
+      <div class="card-title" style="border-bottom:none;padding-bottom:0;margin-bottom:0.9rem">&#128200; Schlusselkennzahlen</div>
+      <div class="cost-row"><span class="clbl">Preis pro m&#178;</span><span class="cval" id="sk_qm">-</span></div>
+      <div class="cost-row"><span class="clbl">Beleihungsauslauf (LTV)</span><span class="cval" id="sk_ltv">-</span></div>
+      <div class="cost-row"><span class="clbl">Zinslast im 1. Jahr</span><span class="cval neg" id="sk_z1">-</span></div>
+      <div class="cost-row"><span class="clbl">Tilgung im 1. Jahr</span><span class="cval pos" id="sk_t1">-</span></div>
+      <div class="cost-row"><span class="clbl">Restschuld nach Zinsbindung</span><span class="cval" id="sk_rs">-</span></div>
+      <div class="cost-row"><span class="clbl">Volltilgung in</span><span class="cval" id="sk_vt">-</span></div>
+      <div class="cost-row"><span class="clbl">Kaufpreis / Jahresmiete</span><span class="cval" id="sk_fak">-</span></div>
+      <div class="cost-row" style="border-bottom:none"><span class="clbl">Nebenkosten-Quote</span><span class="cval" id="sk_nkq">-</span></div>
+      <div class="alert alert-info" style="margin-top:0.75rem">
+        &#128161; <strong>Richtwerte:</strong><br>
+        Kaufpreis / Jahresmiete: &lt; 25x = gut, &gt; 35x = spekulativ<br>
+        LTV: &lt; 60% = bestester Zins, &gt; 80% = Aufschlage<br>
+        Tilgung: mind. 2% empfohlen
+      </div>
+    </div>
+
+  </div><!-- end sidebar -->
+</div>
+
+<footer>
+  <p>&#9888; Dieser Rechner dient zur Orientierung und ersetzt keine professionelle Finanz- oder Steuerberatung.</p>
+  <p>Alle Angaben ohne Gewahr. Zinssatze, Steuerregeln und Marktbedingungen konnen sich andern. Stand: 2025.</p>
+</footer>
+
+<script>
+// ============================================================
+// UTILITIES
+// ============================================================
+const $ = id => document.getElementById(id);
+const fmtE = (n, d=0) => new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:d}).format(n);
+const fmtP = (n, d=2) => n.toFixed(d).replace('.',',') + '\u00a0%';
+const fmtN = (n, d=1) => n.toFixed(d).replace('.',',');
+
+// ============================================================
+// CHARTS
+// ============================================================
+let charts = {};
+
+function destroyChart(key) {
+  if (charts[key]) { charts[key].destroy(); charts[key] = null; }
+}
+
+// ============================================================
+// GET INPUTS
+// ============================================================
+function getInputs() {
+  return {
+    kaufpreis:  +$('r_kaufpreis').value,
+    flaeche:    +$('r_flaeche').value,
+    bundesland: +$('r_bundesland').value,
+    mitMakler:   $('r_makler').checked,
+    maklerPct:  +$('r_maklerPct').value / 100,
+    ek:         +$('r_ek').value,
+    zins:       +$('r_zins').value / 100,
+    tilg:       +$('r_tilg').value / 100,
+    zinsb:      +$('r_zinsb').value,
+    // Eigennutzung
+    vmiete:     +$('r_vmiete').value,
+    hg:         +$('r_hg').value,
+    inst:       +$('r_inst').value,
+    gst:        +$('r_gst').value,
+    vers:       +$('r_vers').value,
+    halte:      +$('r_halte').value,
+    opp:        +$('r_opp').value / 100,
+    // Vermietung
+    kaltm:      +$('r_kaltm').value,
+    leer:       +$('r_leer').value,
+    verw:       +$('r_verw').value / 100,
+    instV:      +$('r_instV').value,
+    gstV:       +$('r_gstV').value,
+    stSatz:     +$('r_stSatz').value / 100,
+    gebAnt:     +$('r_gebAnt').value / 100,
+    // Erbbaurecht
+    erbAktiv:    $('r_erbAktiv').checked,
+    erbZins:    +$('r_erbZins').value,
+    erbLaufzeit:+$('r_erbLaufzeit').value,
+    // ETF
+    etfRate:    +$('r_etfRate').value / 100,
+    // Sanierung
+    sanAktiv:    $('r_sanAktiv').checked,
+    sanKosten:  +$('r_sanKosten').value,
+    kfwZuschuss:+$('r_kfwZuschuss').value,
+    sanMonate:  +$('r_sanMonate').value,
+    sanWert:    +$('r_sanWert').value,
+    sanMietAuf: +$('r_sanMietAuf').value,
+  };
+}
+
+// ============================================================
+// CALCULATE
+// ============================================================
+function calculate(i) {
+  // --- Nebenkosten ---
+  const notar   = i.kaufpreis * 0.010;
+  const gb      = i.kaufpreis * 0.005;
+  const gest    = i.kaufpreis * i.bundesland / 100;
+  const makl    = i.mitMakler ? i.kaufpreis * i.maklerPct : 0;
+  const nk      = notar + gb + gest + makl;
+
+  // --- Sanierung ---
+  const sanKosten  = i.sanAktiv ? i.sanKosten : 0;
+  const kfwBetrag  = i.sanAktiv ? Math.min(i.kfwZuschuss, sanKosten) : 0;
+  const sanNetto   = sanKosten - kfwBetrag;
+  const sanWert    = i.sanAktiv ? i.sanWert : 0;
+  const wertNachSan= i.kaufpreis + sanWert;
+
+  // --- Erbbaurecht ---
+  const erbZinsMon  = i.erbAktiv ? i.erbZins : 0;
+  const erbZinsJahr = erbZinsMon * 12;
+
+  const gesinv  = i.kaufpreis + nk + sanNetto;
+
+  // --- Financing ---
+  const darlehen = Math.max(0, gesinv - i.ek);
+  const ekQuote  = i.ek / gesinv;
+  const ltv      = darlehen / i.kaufpreis;
+  const mzins    = i.zins / 12;
+
+  // Monthly annuity rate
+  const rate = darlehen > 0 ? darlehen * (i.zins + i.tilg) / 12 : 0;
+
+  // First month breakdown
+  const zinsAnt1  = darlehen * mzins;
+  const tilgAnt1  = rate - zinsAnt1;
+
+  // Restschuld after Zinsbindung (month-by-month)
+  let restschuld = darlehen;
+  let zinsSumZB  = 0;
+  const zbMonate = i.zinsb * 12;
+  for (let m = 0; m < zbMonate; m++) {
+    const zM = restschuld * mzins;
+    const tM = Math.min(rate - zM, restschuld);
+    zinsSumZB += zM;
+    restschuld = Math.max(0, restschuld - tM);
+    if (restschuld === 0) break;
+  }
+  const tilgNachZB = darlehen - restschuld;
+
+  // Full repayment duration
+  let laufzeit = 0;
+  if (darlehen > 0) {
+    if (rate > darlehen * mzins) {
+      const n = -Math.log(1 - (darlehen * mzins) / rate) / Math.log(1 + mzins);
+      laufzeit = n / 12;
+    } else {
+      laufzeit = 999;
+    }
+  }
+
+  // Amortization data (yearly, max 50 years)
+  const maxYears = Math.min(Math.ceil(laufzeit) + 1, 52);
+  const amort = [];
+  let s = darlehen, kZ = 0, kT = 0;
+  for (let y = 0; y <= maxYears; y++) {
+    amort.push({ year: y, schuld: s, kZ, kT });
+    for (let m = 0; m < 12 && s > 0; m++) {
+      const z = s * mzins;
+      const t = Math.min(rate - z, s);
+      kZ += z; kT += t;
+      s = Math.max(0, s - t);
+    }
+    if (s <= 0) break;
+  }
+
+  // Anschluss scenarios
+  const anschlussZins = [i.zins - 0.01, i.zins, i.zins + 0.01, i.zins + 0.02, i.zins + 0.03];
+  const anschluss = anschlussZins.map(z => {
+    if (restschuld <= 0) return { z, rate: 0, delta: 0 };
+    const mz = z / 12;
+    const newRate = mz > 0 ? restschuld * (z + i.tilg) / 12 : restschuld * i.tilg / 12;
+    return { z, rate: newRate, delta: newRate - rate, isCurrent: Math.abs(z - i.zins) < 0.0001 };
+  });
+
+  // ============================================================
+  // EIGENNUTZUNG
+  // ============================================================
+  const oppKosten   = i.ek * i.opp / 12;
+  const nkAmort     = (nk + sanNetto) / (i.halte * 12);  // amortize NK + sanierung
+  const wahreKosten = zinsAnt1 + i.hg + i.inst + i.gst + i.vers + nkAmort + oppKosten + erbZinsMon;
+  const wahresMieten = i.vmiete;
+  const vorteil      = wahresMieten - wahreKosten;
+
+  // ============================================================
+  // VERMIETUNG
+  // ============================================================
+  const kaltmNachSan  = i.kaltm + (i.sanAktiv ? i.sanMietAuf : 0); // higher rent post-renovation
+  const jKalt         = kaltmNachSan * 12;
+  const sanLeerVerlust= i.sanAktiv ? i.kaltm * i.sanMonate : 0;    // one-time loss in year 1
+  const leerVerlust   = kaltmNachSan * i.leer;
+  const istMiete      = jKalt - leerVerlust;
+  const bruttoR       = i.kaufpreis > 0 ? jKalt / i.kaufpreis : 0;
+
+  const jZinsen     = darlehen * i.zins;
+  // AfA base includes depreciable sanierung costs (Herstellungskosten)
+  const afaBase     = i.kaufpreis * i.gebAnt + sanNetto;
+  const afa         = afaBase * 0.02;
+  const verwK       = istMiete * i.verw;
+  const instJahr    = i.instV * 12;
+  const gstJahr     = i.gstV * 12;
+  const bewirtK     = verwK + instJahr + gstJahr;
+
+  const stErgebnis  = istMiete - jZinsen - afa - bewirtK - erbZinsJahr; // erbpachtzins deductible
+  const stLast      = stErgebnis * i.stSatz;
+
+  const cfIn        = istMiete;
+  const cfOut       = rate * 12 + bewirtK + erbZinsJahr;
+  const ncfJahr     = cfIn - cfOut - stLast;
+  const ncfMonat    = ncfJahr / 12;
+
+  const nettoR      = gesinv > 0 ? (istMiete - bewirtK - erbZinsJahr - Math.max(0, stLast)) / gesinv : 0;
+  const ekR         = i.ek > 0 ? ncfJahr / i.ek : 0;
+
+  return {
+    notar, gb, gest, makl, nk,
+    sanKosten, kfwBetrag, sanNetto, sanWert, wertNachSan,
+    erbZinsMon, erbZinsJahr,
+    gesinv,
+    darlehen, ekQuote, ltv, rate, mzins,
+    zinsAnt1, tilgAnt1, restschuld, zinsSumZB, tilgNachZB,
+    laufzeit, amort, anschluss,
+    // EN
+    oppKosten, nkAmort, wahreKosten, wahresMieten, vorteil,
+    // Verm
+    jKalt, leerVerlust, sanLeerVerlust, istMiete, bruttoR,
+    jZinsen, afa, afaBase, verwK, instJahr, gstJahr, bewirtK,
+    stErgebnis, stLast, ncfJahr, ncfMonat,
+    nettoR, ekR,
+    // misc
+    preisQm: i.kaufpreis / i.flaeche,
+    kpJkalt: istMiete > 0 ? i.kaufpreis / jKalt : null,
+    nkQuote: i.kaufpreis > 0 ? nk / i.kaufpreis : 0,
+  };
+}
+
+// ============================================================
+// UPDATE DOM
+// ============================================================
+function updateDOM(i, r) {
+  // Slider display values
+  $('v_kaufpreis').textContent = fmtE(i.kaufpreis);
+  $('v_flaeche').textContent   = i.flaeche + '\u00a0m\u00b2';
+  $('v_makler').textContent    = fmtP(i.maklerPct * 100);
+  $('v_ek').textContent        = fmtE(i.ek) + '\u00a0(' + (r.ekQuote * 100).toFixed(0) + '%)';
+  $('v_zins').textContent      = fmtP(i.zins * 100);
+  $('v_tilg').textContent      = fmtP(i.tilg * 100);
+  $('v_vmiete').textContent    = fmtE(i.vmiete);
+  $('v_hg').textContent        = fmtE(i.hg);
+  $('v_inst').textContent      = fmtE(i.inst);
+  $('v_gst').textContent       = fmtE(i.gst);
+  $('v_vers').textContent      = fmtE(i.vers);
+  $('v_halte').textContent     = i.halte + '\u00a0Jahre';
+  $('v_opp').textContent       = fmtP(i.opp * 100, 1);
+  $('v_kaltm').textContent     = fmtE(i.kaltm);
+  $('v_leer').textContent      = fmtN(i.leer, 1) + '\u00a0Monate';
+  $('v_verw').textContent      = fmtP(i.verw * 100, 1);
+  $('v_instV').textContent     = fmtE(i.instV);
+  $('v_gstV').textContent      = fmtE(i.gstV);
+  $('v_stSatz').textContent    = (i.stSatz * 100).toFixed(0) + '%';
+  $('v_gebAnt').textContent    = (i.gebAnt * 100).toFixed(0) + '%';
+
+  $('makler-group').style.display = i.mitMakler ? 'block' : 'none';
+
+  // Nebenkosten card
+  $('d_notar').textContent  = fmtE(r.notar);
+  $('d_gb').textContent     = fmtE(r.gb);
+  $('d_gest').textContent   = fmtE(r.gest);
+  $('d_makl').textContent   = fmtE(r.makl);
+  $('d_nk_total').textContent = fmtE(r.nk);
+  $('d_gesinv').textContent   = fmtE(r.gesinv);
+
+  // EK warning
+  $('ek-warn').style.display = i.ek < r.nk ? 'block' : 'none';
+
+  // Financing KPIs
+  $('kpi_rate').textContent = fmtE(r.rate);
+  const lzText = r.laufzeit < 100 ? fmtN(r.laufzeit, 1) + '\u00a0J.' : '> 50\u00a0J.';
+  $('kpi_lz').textContent   = lzText;
+  setKpiClass($('kpi_lz'), r.laufzeit < 25 ? 'pos' : r.laufzeit < 35 ? '' : 'neg');
+  $('kpi_rest').textContent = fmtE(r.restschuld);
+  setKpiClass($('kpi_rest'), r.restschuld / Math.max(r.darlehen, 1) < 0.5 ? 'pos' : r.restschuld / Math.max(r.darlehen, 1) < 0.75 ? 'warn' : 'neg');
+
+  // Anschluss table
+  const tbody = $('anschluss-body');
+  tbody.innerHTML = '';
+  r.anschluss.forEach(a => {
+    const tr = document.createElement('tr');
+    if (a.isCurrent) tr.className = 'current';
+    const delta = a.delta >= 0 ? '+' + fmtE(a.delta) : fmtE(a.delta);
+    tr.innerHTML = `<td>${fmtP(a.z * 100)}</td><td>${fmtE(a.rate)}</td><td style="color:${a.delta > 50 ? 'var(--danger)' : a.delta < -50 ? 'var(--success)' : 'var(--text)'}">${delta}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Erbbaurecht card
+  $('erb-inputs').style.display = i.erbAktiv ? 'block' : 'none';
+  if (i.erbAktiv) {
+    $('v_erbZins').textContent    = fmtE(i.erbZins) + '/M';
+    $('v_erbLaufzeit').textContent= i.erbLaufzeit + ' Jahre';
+    $('d_erbMonat').textContent   = fmtE(r.erbZinsMon);
+    $('d_erbJahr').textContent    = fmtE(r.erbZinsJahr);
+    $('d_erb30').textContent      = fmtE(r.erbZinsJahr * 30);
+    const horizont = +$('r_horizont').value;
+    $('erb-warn-lz').style.display  = (i.erbLaufzeit <= horizont) ? 'block' : 'none';
+    $('erb-warn-bank').style.display= (i.erbLaufzeit < 50) ? 'block' : 'none';
+  } else {
+    $('erb-warn-lz').style.display   = 'none';
+    $('erb-warn-bank').style.display = 'none';
+  }
+  // Erbpachtzins row in Vermietung
+  $('erb-verm-row').style.display = i.erbAktiv ? '' : 'none';
+  if (i.erbAktiv) $('vt_erb').textContent = '\u2013' + fmtE(r.erbZinsJahr);
+
+  // Sanierung card
+  $('san-inputs').style.display = i.sanAktiv ? 'block' : 'none';
+  if (i.sanAktiv) {
+    $('v_sanKosten').textContent  = fmtE(i.sanKosten);
+    $('v_kfwZuschuss').textContent= fmtE(i.kfwZuschuss);
+    $('v_sanWert').textContent    = fmtE(i.sanWert);
+    $('v_sanMonate').textContent  = i.sanMonate + '\u00a0Monate';
+    $('v_sanMietAuf').textContent = fmtE(i.sanMietAuf) + '/M';
+    $('d_sanBrutto').textContent  = fmtE(r.sanKosten);
+    $('d_kfwBetrag').textContent  = '\u2013\u00a0' + fmtE(r.kfwBetrag);
+    $('d_sanNetto').textContent   = fmtE(r.sanNetto);
+    $('san_kp').textContent       = fmtE(i.kaufpreis);
+    $('san_nk').textContent       = fmtE(r.nk);
+    $('san_snetto').textContent   = fmtE(r.sanNetto);
+    $('san_gi').textContent       = fmtE(r.gesinv);
+    $('san_wertNach').textContent = fmtE(r.wertNachSan);
+    // Rate uplift due to sanierung only
+    const rateOhneSan = Math.max(0, (i.kaufpreis + r.nk - i.ek)) * (i.zins + i.tilg) / 12;
+    $('san_mehrRate').textContent = fmtE(Math.max(0, r.rate - rateOhneSan)) + '/M';
+    $('san_mietausfall').textContent = fmtE(r.sanLeerVerlust);
+  }
+
+  // Sidebar
+  $('s_rate').textContent = fmtE(r.rate);
+  $('s_kp').textContent   = fmtE(i.kaufpreis);
+  $('s_nk').textContent   = fmtE(r.nk);
+  $('s_gi').textContent   = fmtE(r.gesinv);
+  $('s_ek').textContent   = fmtE(i.ek);
+  $('s_ekq').textContent  = fmtP(r.ekQuote * 100);
+  $('s_dl').textContent   = fmtE(r.darlehen);
+  $('s_ltv-warn').style.display = r.ltv > 0.8 ? 'block' : 'none';
+
+  // Key metrics
+  $('sk_qm').textContent  = fmtE(r.preisQm) + '/m\u00b2';
+  $('sk_ltv').textContent = fmtP(r.ltv * 100);
+  $('sk_z1').textContent  = fmtE(r.zinsAnt1 * 12) + '/J.';
+  $('sk_t1').textContent  = fmtE(r.tilgAnt1 * 12) + '/J.';
+  $('sk_rs').textContent  = fmtE(r.restschuld);
+  $('sk_vt').textContent  = r.laufzeit < 100 ? fmtN(r.laufzeit, 1) + ' Jahre' : '> 50 Jahre';
+  $('sk_fak').textContent = r.kpJkalt !== null ? fmtN(r.kpJkalt, 1) + 'x' : '&ndash;';
+  $('sk_nkq').textContent = fmtP(r.nkQuote * 100);
+
+  // Eigennutzung
+  $('en_rate').textContent    = fmtE(r.rate);
+  $('en_zinsant').textContent = '\u2013' + fmtE(r.zinsAnt1);
+  $('en_tilgant').textContent = '+' + fmtE(r.tilgAnt1);
+  $('en_hg').textContent      = fmtE(i.hg);
+  $('en_inst').textContent    = fmtE(i.inst);
+  $('en_gst').textContent     = fmtE(i.gst);
+  $('en_vers').textContent    = fmtE(i.vers);
+  $('en_nkAmort').textContent = '\u2013' + fmtE(r.nkAmort);
+  $('en_opp').textContent     = '\u2013' + fmtE(r.oppKosten);
+  $('en_wahrGes').textContent = fmtE(r.wahreKosten);
+
+  $('kpi_mietKosten').textContent = fmtE(r.wahresMieten);
+  $('kpi_kaufKosten').textContent = fmtE(r.wahreKosten);
+  const vEl = $('kpi_vorteil');
+  vEl.textContent = (r.vorteil >= 0 ? '+' : '') + fmtE(r.vorteil) + '/M';
+  setKpiClass(vEl, r.vorteil > 100 ? 'pos' : r.vorteil > -200 ? 'warn' : 'neg');
+
+  // Vermietung
+  const brEl = $('kpi_brutto');
+  brEl.textContent = fmtP(r.bruttoR * 100);
+  setKpiClass(brEl, r.bruttoR > 0.05 ? 'pos' : r.bruttoR > 0.035 ? 'warn' : 'neg');
+
+  const neEl = $('kpi_netto');
+  neEl.textContent = fmtP(r.nettoR * 100);
+  setKpiClass(neEl, r.nettoR > 0.04 ? 'pos' : r.nettoR > 0.02 ? 'warn' : 'neg');
+
+  const cfEl = $('kpi_cf');
+  cfEl.textContent = fmtE(r.ncfMonat);
+  setKpiClass(cfEl, r.ncfMonat >= 0 ? 'pos' : 'neg');
+
+  const ekrEl = $('kpi_ekr');
+  ekrEl.textContent = fmtP(r.ekR * 100);
+  setKpiClass(ekrEl, r.ekR > 0.06 ? 'pos' : r.ekR > 0.02 ? 'warn' : 'neg');
+
+  $('vt_mjahr').textContent  = fmtE(r.jKalt);
+  $('vt_leer').textContent   = '\u2013' + fmtE(r.leerVerlust);
+  $('vt_istM').textContent   = fmtE(r.istMiete);
+  $('vt_zinsen').textContent = '\u2013' + fmtE(r.jZinsen);
+  $('vt_afa').textContent    = '\u2013' + fmtE(r.afa) + (i.sanAktiv && r.sanNetto > 0 ? ' (inkl. San.-AfA auf ' + fmtE(r.afaBase) + ')' : '');
+  $('vt_kosten').textContent = '\u2013' + fmtE(r.bewirtK);
+  // Sanierung rental loss warning
+  let sanWarnEl = $('vt_san_warn');
+  if (!sanWarnEl) {
+    sanWarnEl = document.createElement('div');
+    sanWarnEl.id = 'vt_san_warn';
+    sanWarnEl.className = 'alert alert-warn';
+    sanWarnEl.style.marginTop = '0.75rem';
+    $('vt_ncf').parentNode.appendChild(sanWarnEl);
+  }
+  if (i.sanAktiv && r.sanLeerVerlust > 0) {
+    sanWarnEl.style.display = 'block';
+    sanWarnEl.innerHTML = '&#9888; <strong>Sanierungsjahr:</strong> Mietausfall ' + i.sanMonate + '\u00a0Monate\u00a0= ' + fmtE(r.sanLeerVerlust) + ' (einmalig, nicht in Jahreskalkulation oben enthalten). Erst nach Fertigstellung vermietbar.';
+  } else {
+    sanWarnEl.style.display = 'none';
+  }
+
+  const uebEl = $('vt_ueb');
+  uebEl.textContent  = (r.stErgebnis < 0 ? '\u2013' : '') + fmtE(Math.abs(r.stErgebnis));
+  uebEl.className    = 'cval ' + (r.stErgebnis >= 0 ? '' : 'neg');
+
+  const stEl = $('vt_steuer');
+  stEl.textContent = (r.stLast >= 0 ? '\u2013' : '+') + fmtE(Math.abs(r.stLast));
+  stEl.className   = 'cval ' + (r.stLast >= 0 ? 'neg' : 'pos');
+
+  const ncfEl = $('vt_ncf');
+  ncfEl.textContent = fmtE(r.ncfJahr) + '\u00a0/\u00a0Jahr';
+  ncfEl.className   = r.ncfJahr >= 0 ? 'pos' : 'neg';
+
+  // Decision meter
+  updateMeter(r, i);
+}
+
+function setKpiClass(el, cls) {
+  el.className = 'kpi-val ' + (cls || '');
+}
+
+function updateMeter(r, i) {
+  let score = 50;
+  // EK quality
+  if (r.ekQuote >= 0.3) score += 12;
+  else if (r.ekQuote >= 0.2) score += 6;
+  else if (r.ekQuote < 0.1) score -= 15;
+  // Laufzeit
+  if (r.laufzeit < 20) score += 10;
+  else if (r.laufzeit < 30) score += 4;
+  else if (r.laufzeit > 40) score -= 12;
+  // Kaufen vs Mieten
+  if (r.vorteil > 200) score += 12;
+  else if (r.vorteil > 0) score += 5;
+  else if (r.vorteil < -500) score -= 15;
+  else if (r.vorteil < -200) score -= 7;
+  // Kaufpreis-Faktor
+  if (r.kpJkalt !== null) {
+    if (r.kpJkalt < 20) score += 10;
+    else if (r.kpJkalt < 25) score += 4;
+    else if (r.kpJkalt > 35) score -= 12;
+    else if (r.kpJkalt > 28) score -= 5;
+  }
+  // LTV
+  if (r.ltv > 0.9) score -= 10;
+  else if (r.ltv > 0.8) score -= 5;
+  else if (r.ltv < 0.6) score += 8;
+
+  score = Math.max(5, Math.min(95, score));
+  $('needle').style.left = score + '%';
+
+  const el = $('verdict');
+  if (score >= 70) {
+    el.textContent = '\u2705 Gute Kaufsituation';
+    el.style.cssText = 'background:#dcfce7;color:#166534';
+  } else if (score >= 50) {
+    el.textContent = '\u2696\ufe0f Abwagen empfohlen';
+    el.style.cssText = 'background:#fef9c3;color:#854d0e';
+  } else if (score >= 35) {
+    el.textContent = '\u26a0\ufe0f Kritische Parameter';
+    el.style.cssText = 'background:#fef3c7;color:#92400e';
+  } else {
+    el.textContent = '\u274c Riskante Finanzierung';
+    el.style.cssText = 'background:#fee2e2;color:#991b1b';
+  }
+}
+
+// ============================================================
+// CHARTS
+// ============================================================
+function drawAmort(r) {
+  destroyChart('amort');
+  const ctx = $('chart_amort').getContext('2d');
+  const labels = r.amort.map(d => d.year + ' J.');
+  charts.amort = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Restschuld', data: r.amort.map(d => Math.round(d.schuld)),
+          borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.08)', fill: true, tension: 0.3 },
+        { label: 'Kum. Zinsen', data: r.amort.map(d => Math.round(d.kZ)),
+          borderColor: '#f59e0b', fill: false, tension: 0.3, borderDash: [5,4] },
+        { label: 'Kum. Tilgung', data: r.amort.map(d => Math.round(d.kT)),
+          borderColor: '#10b981', fill: false, tension: 0.3 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 8 } },
+        tooltip: { callbacks: { label: c => c.dataset.label + ': ' + fmtE(c.parsed.y) } }
+      },
+      scales: {
+        y: { ticks: { callback: v => fmtE(v), font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+        x: { ticks: { font: { size: 10 }, maxRotation: 0 } }
+      }
+    }
+  });
+}
+
+function drawEigennutzung(r, i) {
+  destroyChart('en');
+  const ctx = $('chart_en').getContext('2d');
+  charts.en = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Mieten', 'Kaufen (echte Kosten)'],
+      datasets: [{
+        data: [r.wahresMieten, r.wahreKosten],
+        backgroundColor: ['rgba(239,68,68,0.75)', r.wahreKosten < r.wahresMieten ? 'rgba(16,185,129,0.75)' : 'rgba(245,158,11,0.75)'],
+        borderRadius: 8,
+        label: 'Effektive Monatskosten',
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => fmtE(c.parsed.y) + '/Monat' } }
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { callback: v => fmtE(v), font: { size: 10 } }, grid: { color: '#f1f5f9' } }
+      }
+    }
+  });
+}
+
+function drawVermietung(r, i) {
+  destroyChart('verm');
+  const ctx = $('chart_verm').getContext('2d');
+  const monat = 1/12;
+  const data = [
+    r.jZinsen * monat,
+    r.tilgAnt1,
+    r.verwK * monat,
+    r.instJahr * monat,
+    r.gstJahr * monat,
+    Math.max(0, r.stLast * monat),
+    Math.max(0, r.ncfMonat),
+  ].map(v => Math.max(0, Math.round(v)));
+
+  charts.verm = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Zinsen', 'Tilgung', 'Verwaltung', 'Instandhaltung', 'Grundst. & Vers.', 'Steuern', 'Netto-Cash Flow'],
+      datasets: [{
+        data,
+        backgroundColor: ['#ef4444','#3b82f6','#f59e0b','#8b5cf6','#64748b','#ec4899','#10b981'],
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { font: { size: 11 }, padding: 8 } },
+        tooltip: { callbacks: { label: c => c.label + ': ' + fmtE(c.parsed) + '/M' } }
+      }
+    }
+  });
+}
+
+// ============================================================
+// VERMÖGENSENTWICKLUNG
+// ============================================================
+function calcVermEntwicklung(i, r) {
+  const wachs    = +$('r_wachs').value / 100;
+  const miets    = +$('r_miets').value / 100;
+  const horizont = +$('r_horizont').value;
+
+  $('v_wachs').textContent    = fmtP(wachs * 100);
+  $('v_miets').textContent    = fmtP(miets * 100);
+  $('v_horizont').textContent = horizont + ' Jahre';
+
+  const etfRate = i.etfRate;
+  $('v_etfRate').textContent = fmtP(etfRate * 100, 1);
+
+  const erbMon  = i.erbAktiv ? i.erbZins : 0;
+  const buyerMonthlyCost = r.rate + i.hg + i.inst + i.gst + i.vers + erbMon;
+  const propBase = r.wertNachSan;
+
+  const rsMap = {};
+  r.amort.forEach(d => { rsMap[d.year] = d.schuld; });
+
+  const labels     = [];
+  const kaufWealth = [];
+  const mietWealth = [];
+  const etfWealth  = [];   // S&P 500 / ETF portfolio
+  const propValues = [];
+  const restValues = [];
+  const cumKaufOut = [];
+  const cumMietOut = [];
+
+  let portfolio    = i.ek;
+  let etfPortfolio = i.ek;
+  let cumKauf      = r.nk + r.sanNetto;  // all upfront non-value costs
+  let cumMiet      = 0;
+  let restschuldM  = r.darlehen;
+  let breakEvenYear = null;
+
+  for (let y = 0; y <= horizont; y++) {
+    // Erbpacht value correction: as remaining term shortens, value drops
+    let erbKorr = 1.0;
+    if (i.erbAktiv && i.erbLaufzeit > 0) {
+      const rem = i.erbLaufzeit - y;
+      if (rem <= 0) erbKorr = 0;
+      else if (rem < 40) erbKorr = Math.pow(rem / 40, 1.3);
+    }
+    const propVal = propBase * Math.pow(1 + wachs, y) * erbKorr;
+    const rs      = rsMap[y] !== undefined ? rsMap[y] : 0;
+    const bw      = propVal - rs;
+
+    labels.push(y + '\u00a0J.');
+    kaufWealth.push(Math.round(bw));
+    mietWealth.push(Math.round(portfolio));
+    etfWealth.push(Math.round(etfPortfolio));
+    propValues.push(Math.round(propVal));
+    restValues.push(Math.round(rs));
+    cumKaufOut.push(Math.round(cumKauf));
+    cumMietOut.push(Math.round(cumMiet));
+
+    if (breakEvenYear === null && y > 0 && bw > etfPortfolio) breakEvenYear = y;
+
+    for (let m = 0; m < 12; m++) {
+      const monthTotal   = y * 12 + m;
+      const currentRent  = i.vmiete * Math.pow(1 + miets, monthTotal / 12);
+      const monthlySurplus = buyerMonthlyCost - currentRent;
+
+      portfolio    = portfolio    * (1 + i.opp    / 12) + monthlySurplus;
+      etfPortfolio = etfPortfolio * (1 + etfRate  / 12) + monthlySurplus;
+
+      const zM = restschuldM * r.mzins;
+      const tM = Math.min(r.rate - zM, restschuldM);
+      cumKauf += zM + i.hg + i.inst + i.gst + i.vers + erbMon;
+      cumMiet += currentRent;
+      restschuldM = Math.max(0, restschuldM - tM);
+    }
+  }
+
+  return {
+    horizont, wachs, miets, labels,
+    kaufWealth, mietWealth, etfWealth, propValues, restValues,
+    cumKaufOut, cumMietOut, breakEvenYear,
+    endKauf: kaufWealth[horizont],
+    endMiet: mietWealth[horizont],
+    endEtf:  etfWealth[horizont],
+    endDiff: kaufWealth[horizont] - etfWealth[horizont],
+  };
+}
+
+function drawVermEntwicklung(vd) {
+  // --- Wealth chart ---
+  destroyChart('vermoegen');
+  const beYear = vd.breakEvenYear;
+
+  const breakEvenPlugin = {
+    id: 'breakEvenLine',
+    afterDraw(chart) {
+      if (beYear === null || beYear > vd.horizont) return;
+      const { ctx, scales: { x, y } } = chart;
+      const xPx = x.getPixelForValue(beYear);
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(xPx, y.top);
+      ctx.lineTo(xPx, y.bottom);
+      ctx.strokeStyle = 'rgba(37,99,235,0.55)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.stroke();
+      ctx.fillStyle = '#2563eb';
+      ctx.font = 'bold 11px system-ui,sans-serif';
+      ctx.fillText('Break-even', xPx + 5, y.top + 14);
+      ctx.restore();
+    }
+  };
+
+  charts.vermoegen = new Chart($('chart_vermoegen').getContext('2d'), {
+    type: 'line',
+    plugins: [breakEvenPlugin],
+    data: {
+      labels: vd.labels,
+      datasets: [
+        {
+          label: 'Käufer: Nettovermögen (Immowert − Restschuld)',
+          data: vd.kaufWealth,
+          borderColor: '#2563eb',
+          backgroundColor: ctx => {
+            const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, ctx.chart.height);
+            g.addColorStop(0, 'rgba(37,99,235,0.18)');
+            g.addColorStop(1, 'rgba(37,99,235,0.01)');
+            return g;
+          },
+          fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 2,
+        },
+        {
+          label: 'Mieter: Anlageportfolio (EK + Ersparnisse)',
+          data: vd.mietWealth,
+          borderColor: '#10b981',
+          backgroundColor: ctx => {
+            const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, ctx.chart.height);
+            g.addColorStop(0, 'rgba(16,185,129,0.14)');
+            g.addColorStop(1, 'rgba(16,185,129,0.01)');
+            return g;
+          },
+          fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 2,
+        },
+        {
+          label: 'S&P\u00a0500\u00a0/\u00a0ETF-Portfolio (gleiche Einzahlungen)',
+          data: vd.etfWealth,
+          borderColor: '#f59e0b',
+          backgroundColor: ctx => {
+            const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, ctx.chart.height);
+            g.addColorStop(0, 'rgba(245,158,11,0.12)');
+            g.addColorStop(1, 'rgba(245,158,11,0.01)');
+            return g;
+          },
+          fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 2,
+        },
+        {
+          label: 'Immobilienwert (brutto)',
+          data: vd.propValues,
+          borderColor: '#94a3b8',
+          fill: false, tension: 0.4, borderWidth: 1.5,
+          borderDash: [7, 4], pointRadius: 0,
+        },
+        {
+          label: 'Restschuld',
+          data: vd.restValues,
+          borderColor: '#ef4444',
+          fill: false, tension: 0.4, borderWidth: 1.5,
+          borderDash: [3, 3], pointRadius: 0,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 10, usePointStyle: true } },
+        tooltip: {
+          callbacks: {
+            label: c => ' ' + c.dataset.label.split(':')[0] + ': ' + fmtE(c.parsed.y),
+          }
+        }
+      },
+      scales: {
+        y: {
+          ticks: { callback: v => fmtE(v), font: { size: 10 } },
+          grid: { color: '#f1f5f9' },
+        },
+        x: { ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } }
+      }
+    }
+  });
+
+  // --- Cumulative costs chart ---
+  destroyChart('kosten');
+  charts.kosten = new Chart($('chart_kosten').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: vd.labels,
+      datasets: [
+        {
+          label: 'Käufer: kum. Kosten (Zinsen + lfd. Kosten)',
+          data: vd.cumKaufOut,
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245,158,11,0.1)',
+          fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0,
+        },
+        {
+          label: 'Mieter: kum. Mietzahlungen',
+          data: vd.cumMietOut,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239,68,68,0.07)',
+          fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 10, usePointStyle: true } },
+        tooltip: { callbacks: { label: c => ' ' + c.dataset.label.split(':')[0] + ': ' + fmtE(c.parsed.y) } }
+      },
+      scales: {
+        y: { ticks: { callback: v => fmtE(v), font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+        x: { ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } }
+      }
+    }
+  });
+}
+
+function updateVermEntwicklung(i, r) {
+  const vd = calcVermEntwicklung(i, r);
+
+  const beEl = $('kpi_breakeven');
+  if (vd.breakEvenYear !== null) {
+    beEl.textContent = 'Jahr\u00a0' + vd.breakEvenYear;
+    setKpiClass(beEl, vd.breakEvenYear <= 10 ? 'pos' : vd.breakEvenYear <= 20 ? 'warn' : 'neg');
+  } else {
+    beEl.textContent = 'Kein BE';
+    setKpiClass(beEl, 'neg');
+  }
+
+  $('kpi_ve_kauf').textContent = fmtE(vd.endKauf);
+  setKpiClass($('kpi_ve_kauf'), vd.endKauf > 0 ? 'pos' : 'neg');
+
+  $('kpi_ve_miet').textContent = fmtE(vd.endMiet);
+  setKpiClass($('kpi_ve_miet'), vd.endMiet > 0 ? '' : 'neg');
+
+  $('kpi_ve_etf').textContent = fmtE(vd.endEtf);
+  setKpiClass($('kpi_ve_etf'), vd.endEtf > vd.endKauf ? 'neg' : 'pos');
+
+  const diffEl = $('kpi_ve_diff');
+  diffEl.textContent = (vd.endDiff >= 0 ? '+' : '') + fmtE(vd.endDiff);
+  setKpiClass(diffEl, vd.endDiff > 0 ? 'pos' : 'neg');
+
+  drawVermEntwicklung(vd);
+}
+
+// ============================================================
+// SZENARIENVERGLEICH
+// ============================================================
+const SLOT_COLORS  = ['#2563eb', '#7c3aed', '#ea580c'];
+const SLOT_COLORS_M= ['#10b981', '#0d9488', '#f59e0b'];
+const SLOT_NAMES   = ['Szenario\u00a01', 'Szenario\u00a02', 'Szenario\u00a03'];
+let savedScenarios = [null, null, null];
+
+function hexRgba(hex, a) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function saveScenario(idx) {
+  const i = getInputs();
+  const r = calculate(i);
+  const vd = calcVermEntwicklung(i, r);
+  savedScenarios[idx] = {
+    label: SLOT_NAMES[idx], color: SLOT_COLORS[idx], colorM: SLOT_COLORS_M[idx],
+    i, r, vd,
+  };
+  renderSlots();
+  renderComparison();
+}
+
+let _pendingDeleteIdx = null;
+
+function clearScenario(idx) {
+  _pendingDeleteIdx = idx;
+  const modal = $('del-modal');
+  modal.style.display = 'flex';
+}
+
+function confirmDelete() {
+  if (_pendingDeleteIdx !== null) {
+    savedScenarios[_pendingDeleteIdx] = null;
+    _pendingDeleteIdx = null;
+    renderSlots();
+    renderComparison();
+  }
+  $('del-modal').style.display = 'none';
+}
+
+function cancelDelete() {
+  _pendingDeleteIdx = null;
+  $('del-modal').style.display = 'none';
+}
+
+function loadScenario(idx) {
+  const sc = savedScenarios[idx];
+  if (!sc) return;
+  const i = sc.i;
+  // Immobilie
+  $('r_kaufpreis').value  = i.kaufpreis;
+  $('r_flaeche').value    = i.flaeche;
+  $('r_bundesland').value = i.bundesland;
+  $('r_makler').checked   = i.mitMakler;
+  $('r_maklerPct').value  = i.maklerPct * 100;
+  // Finanzierung
+  $('r_ek').value    = i.ek;
+  $('r_zins').value  = i.zins * 100;
+  $('r_tilg').value  = i.tilg * 100;
+  $('r_zinsb').value = i.zinsb;
+  // Eigennutzung
+  $('r_vmiete').value = i.vmiete;
+  $('r_hg').value     = i.hg;
+  $('r_inst').value   = i.inst;
+  $('r_gst').value    = i.gst;
+  $('r_vers').value   = i.vers;
+  $('r_halte').value  = i.halte;
+  $('r_opp').value    = i.opp * 100;
+  // Vermietung
+  $('r_kaltm').value  = i.kaltm;
+  $('r_leer').value   = i.leer;
+  $('r_verw').value   = i.verw * 100;
+  $('r_instV').value  = i.instV;
+  $('r_gstV').value   = i.gstV;
+  $('r_stSatz').value = i.stSatz * 100;
+  $('r_gebAnt').value = i.gebAnt * 100;
+  // Erbbaurecht
+  $('r_erbAktiv').checked  = i.erbAktiv;
+  $('r_erbZins').value     = i.erbZins;
+  $('r_erbLaufzeit').value = i.erbLaufzeit;
+  // ETF
+  $('r_etfRate').value = i.etfRate * 100;
+  // Sanierung
+  $('r_sanAktiv').checked   = i.sanAktiv;
+  $('r_sanKosten').value    = i.sanKosten;
+  $('r_kfwZuschuss').value  = i.kfwZuschuss;
+  $('r_sanMonate').value    = i.sanMonate;
+  $('r_sanWert').value      = i.sanWert;
+  $('r_sanMietAuf').value   = i.sanMietAuf;
+  updateAll();
+}
+
+function renderSlots() {
+  savedScenarios.forEach((sc, idx) => {
+    const slot    = $('slot-' + idx);
+    const detail  = $('slot-' + idx + '-detail');
+    const status  = $('slot-' + idx + '-status');
+    const loadBtn = $('slot-' + idx + '-load');
+    const clrBtn  = $('slot-' + idx + '-clear');
+    if (sc) {
+      slot.style.borderColor = sc.color;
+      slot.style.borderStyle = 'solid';
+      slot.style.background  = hexRgba(sc.color, 0.04);
+      status.textContent     = 'Gespeichert';
+      status.style.color     = sc.color;
+      detail.style.display   = 'block';
+      detail.innerHTML = `
+        <div><strong>Kaufpreis:</strong> ${fmtE(sc.i.kaufpreis)}</div>
+        <div><strong>EK-Quote:</strong> ${fmtP(sc.r.ekQuote * 100)} &nbsp;|&nbsp; <strong>LTV:</strong> ${fmtP(sc.r.ltv * 100)}</div>
+        <div><strong>Zins:</strong> ${fmtP(sc.i.zins * 100)} &nbsp;|&nbsp; <strong>Tilgung:</strong> ${fmtP(sc.i.tilg * 100)}</div>
+        <div><strong>Rate:</strong> ${fmtE(sc.r.rate)}/M &nbsp;|&nbsp; <strong>Laufzeit:</strong> ${sc.r.laufzeit < 100 ? fmtN(sc.r.laufzeit,1)+'\u00a0J.' : '>50\u00a0J.'}</div>
+      `;
+      loadBtn.style.display = 'block';
+      clrBtn.style.display  = 'block';
+    } else {
+      slot.style.borderColor = '';
+      slot.style.borderStyle = 'dashed';
+      slot.style.background  = '';
+      status.textContent     = 'Leer';
+      status.style.color     = '';
+      detail.style.display   = 'none';
+      detail.innerHTML       = '';
+      loadBtn.style.display  = 'none';
+      clrBtn.style.display   = 'none';
+    }
+  });
+}
+
+function renderComparison() {
+  const active = savedScenarios.filter(Boolean);
+  const section = $('comp-section');
+  if (active.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  drawCompareChart(active);
+  renderCompTable(active);
+}
+
+function drawCompareChart(scenarios) {
+  destroyChart('compare');
+  const minH = Math.min(...scenarios.map(sc => sc.vd.horizont));
+  const labels = scenarios[0].vd.labels.slice(0, minH + 1);
+  const datasets = [];
+  scenarios.forEach(sc => {
+    datasets.push({
+      label: sc.label + ' \u2013 Käufer-Nettovermögen',
+      data: sc.vd.kaufWealth.slice(0, minH + 1),
+      borderColor: sc.color,
+      backgroundColor: hexRgba(sc.color, 0.07),
+      fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 2,
+    });
+    datasets.push({
+      label: sc.label + ' \u2013 Mieter-Portfolio',
+      data: sc.vd.mietWealth.slice(0, minH + 1),
+      borderColor: sc.colorM,
+      backgroundColor: 'transparent',
+      fill: false, tension: 0.4, borderWidth: 1.8,
+      borderDash: [6, 4], pointRadius: 0,
+    });
+  });
+
+  charts.compare = new Chart($('chart_compare').getContext('2d'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 10, usePointStyle: true } },
+        tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + fmtE(c.parsed.y) } },
+      },
+      scales: {
+        y: { ticks: { callback: v => fmtE(v), font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+        x: { ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
+      }
+    }
+  });
+}
+
+function renderCompTable(scenarios) {
+  const rows = [
+    { sec: 'Kaufparameter' },
+    { lbl: 'Kaufpreis',            fmt: sc => fmtE(sc.i.kaufpreis),                raw: sc => sc.i.kaufpreis,       better: 'min' },
+    { lbl: 'Eigenkapital',         fmt: sc => fmtE(sc.i.ek),                        raw: sc => sc.i.ek,              better: 'max' },
+    { lbl: 'Eigenkapitalquote',    fmt: sc => fmtP(sc.r.ekQuote*100),               raw: sc => sc.r.ekQuote,         better: 'max' },
+    { lbl: 'Beleihungsauslauf',    fmt: sc => fmtP(sc.r.ltv*100),                   raw: sc => sc.r.ltv,             better: 'min' },
+    { lbl: 'Preis pro m\u00b2',   fmt: sc => fmtE(sc.r.preisQm)+'/m\u00b2',        raw: sc => sc.r.preisQm,         better: 'min' },
+    { lbl: 'Kaufnebenkosten',      fmt: sc => fmtE(sc.r.nk),                        raw: sc => sc.r.nk,              better: 'min' },
+    { sec: 'Finanzierung' },
+    { lbl: 'Sollzinssatz',         fmt: sc => fmtP(sc.i.zins*100),                  raw: sc => sc.i.zins,            better: 'min' },
+    { lbl: 'Anf. Tilgung',         fmt: sc => fmtP(sc.i.tilg*100),                  raw: sc => sc.i.tilg,            better: 'max' },
+    { lbl: 'Monatliche Rate',      fmt: sc => fmtE(sc.r.rate),                      raw: sc => sc.r.rate,            better: 'min' },
+    { lbl: 'Restschuld n. Zinsbind.', fmt: sc => fmtE(sc.r.restschuld),             raw: sc => sc.r.restschuld,      better: 'min' },
+    { lbl: 'Volltilgung',          fmt: sc => sc.r.laufzeit < 100 ? fmtN(sc.r.laufzeit,1)+'\u00a0J.' : '>50\u00a0J.', raw: sc => Math.min(sc.r.laufzeit,100), better: 'min' },
+    { lbl: 'Zinslast gesamt (ZB)', fmt: sc => fmtE(sc.r.zinsSumZB),                 raw: sc => sc.r.zinsSumZB,       better: 'min' },
+    { sec: 'Eigennutzung' },
+    { lbl: 'Wahre Kosten/Monat',   fmt: sc => fmtE(sc.r.wahreKosten),               raw: sc => sc.r.wahreKosten,     better: 'min' },
+    { lbl: 'Vorteil vs. Miete/M',  fmt: sc => (sc.r.vorteil>=0?'+':'')+fmtE(sc.r.vorteil), raw: sc => sc.r.vorteil, better: 'max' },
+    { sec: 'Kapitalanlage' },
+    { lbl: 'Bruttorendite',        fmt: sc => fmtP(sc.r.bruttoR*100),               raw: sc => sc.r.bruttoR,         better: 'max' },
+    { lbl: 'Nettorendite',         fmt: sc => fmtP(sc.r.nettoR*100),                raw: sc => sc.r.nettoR,          better: 'max' },
+    { lbl: 'Cash Flow/Monat',      fmt: sc => fmtE(sc.r.ncfMonat),                  raw: sc => sc.r.ncfMonat,        better: 'max' },
+    { lbl: 'Eigenkapitalrendite',  fmt: sc => fmtP(sc.r.ekR*100),                   raw: sc => sc.r.ekR,             better: 'max' },
+    { sec: 'Vermögensentwicklung' },
+    { lbl: 'Wertsteigerung p.a.',  fmt: sc => fmtP(sc.vd.wachs*100),                raw: null,                       better: null  },
+    { lbl: 'Mietsteigerung p.a.',  fmt: sc => fmtP(sc.vd.miets*100),                raw: null,                       better: null  },
+    { lbl: 'Break-even Jahr',      fmt: sc => sc.vd.breakEvenYear !== null ? 'Jahr\u00a0'+sc.vd.breakEvenYear : 'Kein BE', raw: sc => sc.vd.breakEvenYear ?? 999, better: 'min' },
+    { lbl: 'Käufer-Vermögen Ende', fmt: sc => fmtE(sc.vd.endKauf),                  raw: sc => sc.vd.endKauf,        better: 'max' },
+    { lbl: 'Mieter-Portfolio Ende',fmt: sc => fmtE(sc.vd.endMiet),                  raw: sc => sc.vd.endMiet,        better: 'max' },
+    { lbl: 'Vorteil Käufer/Mieter',fmt: sc => (sc.vd.endDiff>=0?'+':'')+fmtE(sc.vd.endDiff), raw: sc => sc.vd.endDiff, better: 'max' },
+  ];
+
+  // Header
+  let html = '<thead><tr><th>Kennzahl</th>';
+  scenarios.forEach(sc => {
+    html += `<th><span style="display:inline-flex;align-items:center;gap:5px">
+      <span style="width:10px;height:10px;border-radius:50%;background:${sc.color};display:inline-block;flex-shrink:0"></span>
+      ${sc.label}</span></th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  rows.forEach(row => {
+    if (row.sec) {
+      html += `<tr class="comp-section-row"><td colspan="${scenarios.length + 1}">${row.sec}</td></tr>`;
+      return;
+    }
+    // Find best index
+    let bestIdx = -1;
+    if (row.better && row.raw && scenarios.length > 1) {
+      const vals = scenarios.map(sc => row.raw(sc));
+      bestIdx = row.better === 'max' ? vals.indexOf(Math.max(...vals)) : vals.indexOf(Math.min(...vals));
+    }
+    html += `<tr><td class="row-lbl">${row.lbl}</td>`;
+    scenarios.forEach((sc, idx) => {
+      const best = idx === bestIdx;
+      html += `<td style="font-weight:${best?'700':'400'};color:${best?sc.color:'inherit'}">
+        ${best ? '\u2605\u00a0' : ''}${row.fmt(sc)}</td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody>';
+  $('comp-table').innerHTML = html;
+}
+
+// ============================================================
+// MAIN UPDATE
+// ============================================================
+function updateAll() {
+  const i = getInputs();
+  const r = calculate(i);
+  updateDOM(i, r);
+
+  // Redraw charts based on active tab
+  drawAmort(r);
+  const activeTab = document.querySelector('.tab-content.active')?.id;
+  if (activeTab === 'tab-eigen') drawEigennutzung(r, i);
+  if (activeTab === 'tab-verm') drawVermietung(r, i);
+
+  // Always update wealth development
+  updateVermEntwicklung(i, r);
+}
+
+// ============================================================
+// TABS
+// ============================================================
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    this.classList.add('active');
+    const tab = 'tab-' + this.dataset.tab;
+    $(tab).classList.add('active');
+    // Redraw tab chart
+    setTimeout(() => {
+      const i = getInputs();
+      const r = calculate(i);
+      if (this.dataset.tab === 'eigen') drawEigennutzung(r, i);
+      if (this.dataset.tab === 'verm') drawVermietung(r, i);
+    }, 30);
+  });
+});
+
+// ============================================================
+// EVENT LISTENERS
+// ============================================================
+document.querySelectorAll('input[type="range"], select, input[type="checkbox"]').forEach(el => {
+  el.addEventListener('input', updateAll);
+  el.addEventListener('change', updateAll);
+});
+// iOS Safari: .value is not yet updated when touchmove fires — defer by one tick
+document.querySelectorAll('input[type="range"]').forEach(el => {
+  el.addEventListener('touchmove', () => setTimeout(updateAll, 0), { passive: true });
+  el.addEventListener('touchend',  () => setTimeout(updateAll, 0), { passive: true });
+});
+
+// ============================================================
+// INIT
+// ============================================================
+updateAll();
+</script>
+<!-- DELETE CONFIRMATION MODAL -->
+<div id="del-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:2000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:2rem 2rem 1.5rem;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.25);text-align:center">
+    <div style="font-size:2rem;margin-bottom:0.75rem">&#128465;</div>
+    <h3 style="margin:0 0 0.5rem;font-size:1.05rem;color:var(--text)">Szenario löschen?</h3>
+    <p style="margin:0 0 1.5rem;font-size:0.85rem;color:var(--text-muted)">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+    <div style="display:flex;gap:0.75rem;justify-content:center">
+      <button onclick="cancelDelete()" style="flex:1;padding:0.55rem 1rem;background:#f1f5f9;color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.88rem;cursor:pointer;font-weight:600">Abbrechen</button>
+      <button onclick="confirmDelete()" style="flex:1;padding:0.55rem 1rem;background:var(--danger);color:#fff;border:none;border-radius:8px;font-size:0.88rem;cursor:pointer;font-weight:600">Ja, löschen</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
