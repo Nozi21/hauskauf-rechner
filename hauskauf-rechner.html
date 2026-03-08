@@ -841,6 +841,7 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="eigen">&#127968; Eigennutzung</button>
       <button class="tab-btn" data-tab="verm">&#128188; Kapitalanlage / Vermietung</button>
+      <button class="tab-btn" data-tab="ferie">&#127958; Ferienhaus</button>
     </div>
 
     <!-- TAB: EIGENNUTZUNG -->
@@ -1059,6 +1060,123 @@
       </div>
     </div>
 
+    <!-- TAB: FERIENHAUS -->
+    <div id="tab-ferie" class="tab-content">
+      <div class="card">
+        <div class="card-title"><span class="icon">&#127958;</span> Ferienhaus / Wochenendhaus &ndash; Kostenrechnung</div>
+
+        <div class="section-lbl">Nutzung</div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Nutzungstage pro Jahr <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Wie viele Tage im Jahr nutzen Sie das Haus? 20 Wochenenden = ca. 40 Tage, ganzer Sommer = ca. 60–90 Tage.</span></span></span>
+            <span class="slider-val" id="v_fNutzTage">40 Tage</span>
+          </div>
+          <input type="range" id="r_fNutzTage" min="5" max="200" step="5" value="40">
+        </div>
+
+        <div class="section-lbl">Fahrtkosten</div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Fahrtdistanz (einfach, km) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Einfache Strecke zum Ferienhaus. Hin- und Rückfahrt wird automatisch verdoppelt.</span></span></span>
+            <span class="slider-val" id="v_fFahrtKm">150 km</span>
+          </div>
+          <input type="range" id="r_fFahrtKm" min="0" max="800" step="10" value="150">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Fahrten pro Jahr <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Anzahl der Anreisen pro Jahr. Bei 20 Wochenenden = 20 Fahrten (Hin+Zurück je Fahrt).</span></span></span>
+            <span class="slider-val" id="v_fFahrten">20</span>
+          </div>
+          <input type="range" id="r_fFahrten" min="1" max="60" step="1" value="20">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Kosten pro km <span class="tip"><span class="tip-icon">i</span><span class="tip-box">ADAC-Richtlinie 2024: ~0,30 €/km (Benzin/Diesel Mittelklasse). Elektroauto: ~0,12–0,18 €/km. Bahn: individuell.</span></span></span>
+            <span class="slider-val" id="v_fKmKosten">0,30 €/km</span>
+          </div>
+          <input type="range" id="r_fKmKosten" min="0.05" max="0.60" step="0.01" value="0.30">
+        </div>
+
+        <div class="section-lbl">Laufende Kosten (auch bei Nichtnutzung)</div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Energie &amp; Nebenkosten (monatl.) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Grundgebühren laufen auch bei Leerstand: Strom (~20–50 €), Gas/Heizung Frostschutz (~30–80 €), Wasser (~15–30 €), Internet (~25–40 €). Typisch gesamt: 80–200 €/Monat.</span></span></span>
+            <span class="slider-val" id="v_fEnergie">120 &#8364;</span>
+          </div>
+          <input type="range" id="r_fEnergie" min="0" max="600" step="10" value="120">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Hausgeld / Grundsteuer / Versicherung (monatl.) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Grundsteuer (je nach Gemeinde), Wohngebäudeversicherung (inkl. Elementar empfohlen), ggf. Hausgeld bei ETW. Typisch: 150–350 €/Monat.</span></span></span>
+            <span class="slider-val" id="v_fFixKosten">200 &#8364;</span>
+          </div>
+          <input type="range" id="r_fFixKosten" min="0" max="800" step="25" value="200">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Instandhaltung &amp; Pflege (monatl.) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Instandhaltungsrücklage + Gartenpflege + Hausmeister (falls nötig). Ferienhäuser verschleißen schneller als täglich bewohnte Häuser. Richtwert: 1,5–3 €/m²/Monat.</span></span></span>
+            <span class="slider-val" id="v_fInst">150 &#8364;</span>
+          </div>
+          <input type="range" id="r_fInst" min="0" max="800" step="25" value="150">
+        </div>
+
+        <div class="section-lbl">Vergleich: Ferienunterkunft mieten</div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span class="lbl">Vergleichspreis Ferienwohnung (pro Nacht) <span class="tip"><span class="tip-icon">i</span><span class="tip-box">Was würde eine vergleichbare Ferienwohnung / ein Ferienhaus pro Nacht kosten? Airbnb/Booking-Preise für die Zielregion recherchieren. Typisch: 80–250 €/Nacht.</span></span></span>
+            <span class="slider-val" id="v_fVergleich">120 &#8364;/Nacht</span>
+          </div>
+          <input type="range" id="r_fVergleich" min="30" max="500" step="10" value="120">
+        </div>
+
+        <div class="section-lbl">Ergebnis</div>
+
+        <div class="kpi-grid kpi-grid-2" style="margin-bottom:1rem">
+          <div class="kpi-card">
+            <div class="kpi-val" id="fkpi_jahres">–</div>
+            <div class="kpi-lbl">Gesamtkosten / Jahr</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="fkpi_tag">–</div>
+            <div class="kpi-lbl">Kosten pro Nutzungstag</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="fkpi_we">–</div>
+            <div class="kpi-lbl">Kosten pro Wochenende (2 Nächte)</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="fkpi_be">–</div>
+            <div class="kpi-lbl">Äquivalente Nächte/Jahr (Mietpreis)</div>
+          </div>
+        </div>
+
+        <div class="cost-row"><span class="clbl">Zinsen (Jahr 1)</span><span class="cval neg" id="fv_zins">–</span></div>
+        <div class="cost-row"><span class="clbl">Energie &amp; Nebenkosten</span><span class="cval neg" id="fv_energie">–</span></div>
+        <div class="cost-row"><span class="clbl">Grundsteuer / Versicherung / HG</span><span class="cval neg" id="fv_fix">–</span></div>
+        <div class="cost-row"><span class="clbl">Instandhaltung &amp; Pflege</span><span class="cval neg" id="fv_inst">–</span></div>
+        <div class="cost-row"><span class="clbl">Fahrtkosten</span><span class="cval neg" id="fv_fahrt">–</span></div>
+        <div class="cost-row"><span class="clbl">Amortis. Kaufnebenkosten</span><span class="cval neg" id="fv_nkAmort">–</span></div>
+        <div class="cost-row"><span class="clbl">Opportunitätskosten EK</span><span class="cval neg" id="fv_opp">–</span></div>
+        <div class="cost-total-row"><span>Gesamtkosten pro Jahr</span><span id="fv_gesamt">–</span></div>
+
+        <div style="margin-top:1rem;padding:1rem;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0" id="ferie-vorteil-box">
+          <div style="font-size:0.82rem;font-weight:600;color:#15803d" id="ferie-vorteil-text">–</div>
+        </div>
+
+        <div class="alert alert-info" style="margin-top:1rem">
+          <strong>Steuerlich:</strong> Ein reines Ferienhaus (keine Vermietung) bietet keine steuerlichen Vorteile &ndash; alle Kosten sind privat. Bei gelegentlicher Vermietung bis <strong>520 €/Jahr</strong> (Freigrenze) bleibt alles steuerfrei. Darüber: anteilige Kosten als Werbungskosten absetzbar.
+        </div>
+      </div>
+    </div>
+
     <!-- VERMÖGENSENTWICKLUNG -->
     <div class="card">
       <div class="card-title"><span class="icon">&#128200;</span> Vermögensentwicklung im Zeitverlauf</div>
@@ -1269,6 +1387,15 @@ function getInputs() {
     erbLaufzeit:+$('r_erbLaufzeit').value,
     // ETF
     etfRate:    +$('r_etfRate').value / 100,
+    // Ferienhaus
+    fNutzTage:  +$('r_fNutzTage').value,
+    fFahrtKm:   +$('r_fFahrtKm').value,
+    fFahrten:   +$('r_fFahrten').value,
+    fKmKosten:  +$('r_fKmKosten').value,
+    fEnergie:   +$('r_fEnergie').value,
+    fFixKosten: +$('r_fFixKosten').value,
+    fInst:      +$('r_fInst').value,
+    fVergleich: +$('r_fVergleich').value,
     // Sanierung
     sanAktiv:    $('r_sanAktiv').checked,
     sanKosten:  +$('r_sanKosten').value,
@@ -1427,6 +1554,20 @@ function calculate(i) {
     preisQm: i.flaeche > 0 ? i.kaufpreis / i.flaeche : 0,
     kpJkalt: istMiete > 0 ? i.kaufpreis / jKalt : null,
     nkQuote: i.kaufpreis > 0 ? nk / i.kaufpreis : 0,
+    // Ferienhaus
+    fFahrtJahr:   i.fFahrtKm * 2 * i.fFahrten * i.fKmKosten,
+    fEnergieJahr: i.fEnergie * 12,
+    fFixJahr:     i.fFixKosten * 12,
+    fInstJahrF:   i.fInst * 12,
+    fNkAmort:     (nk + (i.sanAktiv ? sanNetto : 0)) / Math.max(1, i.halte),
+    fOppKosten:   i.ek * i.opp,
+    get fGesamt() {
+      return zinsAnt1 * 12 + this.fEnergieJahr + this.fFixJahr + this.fInstJahrF + this.fFahrtJahr + this.fNkAmort + this.fOppKosten;
+    },
+    get fKostenTag()  { return i.fNutzTage > 0 ? this.fGesamt / i.fNutzTage : 0; },
+    get fKostenWE()   { return this.fKostenTag * 2; },
+    get fVerglJahr()  { return i.fVergleich * i.fNutzTage; },
+    get fVorteil()    { return this.fVerglJahr - this.fGesamt; },
   };
 }
 
@@ -1660,6 +1801,42 @@ function updateMeter(r, i) {
 
   score = Math.max(5, Math.min(95, score));
   $('needle').style.left = score + '%';
+
+  // ---- Ferienhaus ----
+  $('v_fNutzTage').textContent  = i.fNutzTage + ' Tage';
+  $('v_fFahrtKm').textContent   = i.fFahrtKm + ' km';
+  $('v_fFahrten').textContent   = i.fFahrten;
+  $('v_fKmKosten').textContent  = i.fKmKosten.toFixed(2).replace('.', ',') + ' \u20ac/km';
+  $('v_fEnergie').textContent   = fmtE(i.fEnergie);
+  $('v_fFixKosten').textContent = fmtE(i.fFixKosten);
+  $('v_fInst').textContent      = fmtE(i.fInst);
+  $('v_fVergleich').textContent = fmtE(i.fVergleich) + '/Nacht';
+
+  $('fkpi_jahres').textContent = fmtE(r.fGesamt);
+  $('fkpi_tag').textContent    = fmtE(r.fKostenTag) + '/Tag';
+  $('fkpi_we').textContent     = fmtE(r.fKostenWE) + '/WE';
+  $('fkpi_be').textContent     = i.fVergleich > 0 ? Math.round(r.fGesamt / i.fVergleich) + ' Nächte' : '–';
+
+  $('fv_zins').textContent    = '\u2013' + fmtE(r.zinsAnt1 * 12);
+  $('fv_energie').textContent = '\u2013' + fmtE(r.fEnergieJahr);
+  $('fv_fix').textContent     = '\u2013' + fmtE(r.fFixJahr);
+  $('fv_inst').textContent    = '\u2013' + fmtE(r.fInstJahrF);
+  $('fv_fahrt').textContent   = '\u2013' + fmtE(r.fFahrtJahr);
+  $('fv_nkAmort').textContent = '\u2013' + fmtE(r.fNkAmort);
+  $('fv_opp').textContent     = '\u2013' + fmtE(r.fOppKosten);
+  $('fv_gesamt').textContent  = fmtE(r.fGesamt);
+
+  const ferieBox = $('ferie-vorteil-box');
+  const ferieText = $('ferie-vorteil-text');
+  if (r.fVorteil > 0) {
+    ferieBox.style.background = '#f0fdf4'; ferieBox.style.borderColor = '#bbf7d0';
+    ferieText.style.color = '#15803d';
+    ferieText.textContent = '\u2705 Kaufen lohnt sich: Sie sparen ' + fmtE(r.fVorteil) + '/Jahr gegenüber ' + i.fNutzTage + ' Tagen in vergleichbaren Ferienwohnungen (' + fmtE(i.fVergleich) + '/Nacht).';
+  } else {
+    ferieBox.style.background = '#fef9c3'; ferieBox.style.borderColor = '#fde68a';
+    ferieText.style.color = '#92400e';
+    ferieText.textContent = '\u26a0\ufe0f Mieten ist günstiger: Das Ferienhaus kostet ' + fmtE(-r.fVorteil) + '/Jahr mehr als ' + i.fNutzTage + ' Tage in vergleichbaren Ferienwohnungen zu buchen.';
+  }
 
   const el = $('verdict');
   if (score >= 70) {
@@ -2136,6 +2313,15 @@ function loadScenario(idx) {
   $('r_sanMonate').value    = i.sanMonate;
   $('r_sanWert').value      = i.sanWert;
   $('r_sanMietAuf').value   = i.sanMietAuf;
+  // Ferienhaus
+  if (i.fNutzTage  !== undefined) $('r_fNutzTage').value  = i.fNutzTage;
+  if (i.fFahrtKm   !== undefined) $('r_fFahrtKm').value   = i.fFahrtKm;
+  if (i.fFahrten   !== undefined) $('r_fFahrten').value   = i.fFahrten;
+  if (i.fKmKosten  !== undefined) $('r_fKmKosten').value  = i.fKmKosten;
+  if (i.fEnergie   !== undefined) $('r_fEnergie').value   = i.fEnergie;
+  if (i.fFixKosten !== undefined) $('r_fFixKosten').value = i.fFixKosten;
+  if (i.fInst      !== undefined) $('r_fInst').value      = i.fInst;
+  if (i.fVergleich !== undefined) $('r_fVergleich').value = i.fVergleich;
   updateAll();
 }
 
